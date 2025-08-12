@@ -1,0 +1,26 @@
+{
+  "tags": {
+    "sao-miguel": 5,
+    "funding": 4,
+    "agroforestry": 4,
+    "regeneration": 4,
+    "azores": 3,
+    "marine": 3,
+    "freshwater": 3,
+    "eu": 2,
+    "policy": 2,
+    "monitoring": 2
+  },
+  "content": {
+    "funding": 3,
+    "pilot": 2,
+    "expansion": 2,
+    "consultation": 2
+  },
+  "sources": {
+    "Governo": 1,
+    "Universidade": 1,
+    "EU": 1,
+    "FAO": 1
+  }
+}

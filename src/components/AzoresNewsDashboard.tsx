@@ -1,36 +1,39 @@
 // ===== File: components/AzoresNewsDashboard.tsx =====
 "use client";
 import { useEffect, useMemo, useState } from "react";
-
-export type Item = {
-  id: string;
-  title: string;
-  source: string;
-  url: string;
-  publishedAt: string;
-  tags?: string[];
-  summary?: string;
-};
+import { calculateRelevanceScore, getScoreboard, type Item } from "../utils/scoring";
 
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString() : "");
 const uniq = <T,>(arr: T[]) => Array.from(new Set(arr));
-function score(item: Item): number {
-  let s = 0;
-  if (item.tags?.includes("sao-miguel")) s += 3;
-  if (item.tags?.includes("azores")) s += 2;
-  if (item.tags?.includes("funding")) s += 2;
-  if (item.tags?.includes("policy")) s += 1;
-  const ageDays = (Date.now() - new Date(item.publishedAt).getTime()) / (1000 * 60 * 60 * 24);
-  s += Math.max(0, 7 - ageDays) * 0.2;
-  return s;
-}
 
 export default function AzoresNewsDashboard({ src = '/sample_texts.json' }: { src?: string }) {
   const [items, setItems] = useState<Item[]>([]);
-  const [query, setQuery] = useState("");
-  const [tag, setTag] = useState<string | null>(null);
-  const [source, setSource] = useState<string | null>(null);
-  const [sort, setSort] = useState<"score" | "recent">("recent");
+  const [scoreboard, setScoreboard] = useState<any>(null);
+  
+  // Get initial values from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const [query, setQuery] = useState(urlParams.get("q") || "");
+  const [tag, setTag] = useState<string | null>(urlParams.get("tag"));
+  const [source, setSource] = useState<string | null>(urlParams.get("source"));
+  const [sort, setSort] = useState<"relevance" | "recent">((urlParams.get("sort") as "relevance" | "recent") || "recent");
+
+  // Function to update URL params
+  const updateURL = (updates: Record<string, string | null>) => {
+    const url = new URL(window.location.href);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === "") {
+        url.searchParams.delete(key);
+      } else {
+        url.searchParams.set(key, value);
+      }
+    });
+    window.history.replaceState({}, "", url.toString());
+  };
+
+  // Update URL when state changes
+  useEffect(() => {
+    updateURL({ q: query, tag, source, sort });
+  }, [query, tag, source, sort]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,6 +53,20 @@ export default function AzoresNewsDashboard({ src = '/sample_texts.json' }: { sr
     fetchData();
   }, []);
 
+  // Fetch scoreboard
+  useEffect(() => {
+    const loadScoreboard = async () => {
+      try {
+        const board = await getScoreboard();
+        setScoreboard(board);
+      } catch (error) {
+        console.error('Failed to load scoreboard:', error);
+      }
+    };
+    
+    loadScoreboard();
+  }, []);
+
   const tags = useMemo(() => uniq(items.flatMap((i) => i.tags ?? [])).sort(), [items]);
   const sources = useMemo(() => uniq(items.map((i) => i.source)).sort(), [items]);
 
@@ -61,11 +78,14 @@ export default function AzoresNewsDashboard({ src = '/sample_texts.json' }: { sr
     }
     if (tag) out = out.filter((i) => i.tags?.includes(tag));
     if (source) out = out.filter((i) => i.source === source);
-    out = [...out].sort(
-      sort === "recent"
-        ? (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-        : (a, b) => score(b) - score(a)
-    );
+    out = [...out].sort((a, b) => {
+      if (sort === "recent") {
+        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+      } else if (scoreboard) {
+        return calculateRelevanceScore(b, scoreboard) - calculateRelevanceScore(a, scoreboard);
+      }
+      return 0;
+    });
     return out;
   }, [items, query, tag, source, sort]);
 
@@ -100,8 +120,8 @@ export default function AzoresNewsDashboard({ src = '/sample_texts.json' }: { sr
                 </option>
               ))}
             </select>
-            <select value={sort} onChange={(e) => setSort(e.target.value as any)} className="px-3 py-2 rounded-xl border">
-              <option value="score">Sort: Relevance</option>
+            <select value={sort} onChange={(e) => setSort(e.target.value as "relevance" | "recent")} className="px-3 py-2 rounded-xl border">
+              <option value="relevance">Sort: Relevance</option>
               <option value="recent">Sort: Recent</option>
             </select>
           </div>
@@ -117,7 +137,9 @@ export default function AzoresNewsDashboard({ src = '/sample_texts.json' }: { sr
                   {item.title}
                 </a>
               </h2>
-              <span className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">{score(item).toFixed(1)}</span>
+              <span className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">
+                {scoreboard ? calculateRelevanceScore(item, scoreboard).toFixed(1) : '-'}
+              </span>
             </div>
             <p className="mt-2 text-sm text-neutral-700">{item.summary}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
