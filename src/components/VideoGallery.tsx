@@ -1,110 +1,189 @@
 import { useEffect, useMemo, useState } from 'react'
 
+const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString() : "")
+
 type VideoItem = {
   id: string
   title: string
-  description: string
-  publishedAt: string
-  channelId: string
-  channelTitle: string
-  thumbnails: Record<string, { url: string; width?: number; height?: number }>
+  source: string
   url: string
-  topics?: string[]
+  publishedAt: string
+  tags?: string[]
+  summary?: string
+  thumbnail: string
+  duration: string
+  channel: string
 }
-
-type DataShape = { generatedAt: string; count: number; items: VideoItem[] }
 
 export default function VideoGallery({ src = '/sample_videos.json' }: { src?: string }) {
-  const [data, setData] = useState<DataShape | null>(null)
-  const [q, setQ] = useState('')
-  const [channel, setChannel] = useState('')
+  const [items, setItems] = useState<VideoItem[]>([])
+  const [query, setQuery] = useState('')
+  const [tag, setTag] = useState<string | null>(null)
+  const [source, setSource] = useState<string | null>(null)
+  const [sort, setSort] = useState<"relevance" | "recent">("recent")
 
   useEffect(() => {
-    fetch(src, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => setData({ generatedAt: '', count: 0, items: [] } as DataShape))
+    const fetchData = async () => {
+      try {
+        const res = await fetch(src)
+        const data = await res.json() || []
+        setItems(data)
+      } catch {
+        setItems([])
+      }
+    }
+
+    fetchData()
   }, [src])
 
-  const channels = useMemo(() => {
+  const tags = useMemo(() => {
     const set = new Set<string>()
-    data?.items.forEach((v) => set.add(v.channelTitle))
+    items.forEach((v) => v.tags?.forEach(tag => set.add(tag)))
     return Array.from(set).sort()
-  }, [data])
+  }, [items])
+
+  const sources = useMemo(() => {
+    const set = new Set<string>()
+    items.forEach((v) => set.add(v.source))
+    return Array.from(set).sort()
+  }, [items])
 
   const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase()
-    return (data?.items || []).filter((v) => {
-      const matchesQ = !term || v.title.toLowerCase().includes(term) || v.channelTitle.toLowerCase().includes(term)
-      const matchesCh = !channel || v.channelTitle === channel
-      return matchesQ && matchesCh
+    let out = items
+    if (query.trim()) {
+      const q = query.toLowerCase()
+      out = out.filter((i) => i.title.toLowerCase().includes(q) || i.summary?.toLowerCase().includes(q))
+    }
+    if (tag) out = out.filter((i) => i.tags?.includes(tag))
+    if (source) out = out.filter((i) => i.source === source)
+    
+    out = [...out].sort((a, b) => {
+      if (sort === "recent") {
+        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+      } else {
+        // Simple relevance scoring based on tags
+        const getRelevanceScore = (item: VideoItem) => {
+          let score = 0
+          if (item.tags?.includes("agroforestry")) score += 4
+          if (item.tags?.includes("regeneration")) score += 4
+          if (item.tags?.includes("permaculture")) score += 3
+          if (item.tags?.includes("island")) score += 3
+          if (item.tags?.includes("coastal")) score += 3
+          if (item.tags?.includes("water")) score += 2
+          if (item.tags?.includes("soil")) score += 2
+          return score
+        }
+        return getRelevanceScore(b) - getRelevanceScore(a)
+      }
     })
-  }, [data, q, channel])
+    return out
+  }, [items, query, tag, source, sort])
+
+  const formatDuration = (duration: string) => {
+    // Convert ISO 8601 duration to readable format
+    const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/)
+    if (!match) return duration
+    
+    const hours = match[1]?.replace('H', '') || '0'
+    const minutes = match[2]?.replace('M', '') || '0'
+    const seconds = match[3]?.replace('S', '') || '0'
+    
+    if (hours !== '0') {
+      return `${hours}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`
+    }
+    return `${minutes}:${seconds.padStart(2, '0')}`
+  }
 
   return (
-    <div className="w-full">
-      <Controls q={q} setQ={setQ} channel={channel} setChannel={setChannel} channels={channels} />
-
-      {!data ? (
-        <p className="text-sm opacity-70">Loading…</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-sm opacity-70">No videos match your filters.</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((v) => (
-            <VideoCard key={v.id} v={v} />
-          ))}
+    <div className="min-h-screen bg-neutral-50 text-neutral-900">
+      <header>
+        <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Regenerative Agriculture Video Library</h1>
+            <p className="text-sm text-neutral-600">Curated videos from @DiscoverPermaculture and @amillison</p>
+          </div>
+          <div className="flex gap-2 flex-wrap items-center">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search videos..."
+              className="px-3 py-2 rounded-xl border w-48"
+            />
+            <select value={tag ?? ""} onChange={(e) => setTag(e.target.value || null)} className="px-3 py-2 rounded-xl border">
+              <option value="">All tags</option>
+              {tags.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <select value={source ?? ""} onChange={(e) => setSource(e.target.value || null)} className="px-3 py-2 rounded-xl border">
+              <option value="">All sources</option>
+              {sources.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <select value={sort} onChange={(e) => setSort(e.target.value as "relevance" | "recent")} className="px-3 py-2 rounded-xl border">
+              <option value="relevance">Sort: Relevance</option>
+              <option value="recent">Sort: Recent</option>
+            </select>
+          </div>
         </div>
-      )}
-    </div>
-  )
-}
+      </header>
 
-function Controls({ q, setQ, channel, setChannel, channels }: {
-  q: string; setQ: (v: string) => void; channel: string; setChannel: (v: string) => void; channels: string[]
-}) {
-  return (
-    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Search videos…"
-        className="w-full sm:w-1/2 rounded-2xl border px-4 py-2 shadow-sm focus:outline-none"
-      />
-      <select
-        value={channel}
-        onChange={(e) => setChannel(e.target.value)}
-        className="w-full sm:w-1/3 rounded-2xl border px-4 py-2 shadow-sm focus:outline-none"
-      >
-        <option value="">All channels</option>
-        {channels.map((c) => (
-          <option key={c} value={c}>{c}</option>
+      <main className="max-w-6xl mx-auto px-4 py-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {filtered.map((item) => (
+          <article key={item.id} className="group rounded-2xl border bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            <div className="relative aspect-video">
+              <img 
+                src={item.thumbnail} 
+                alt={item.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
+                {formatDuration(item.duration)}
+              </div>
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                <div className="bg-red-600 text-white p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="text-lg font-semibold leading-snug">
+                  <a href={item.url} target="_blank" rel="noreferrer" className="hover:underline">
+                    {item.title}
+                  </a>
+                </h2>
+              </div>
+              <p className="mt-2 text-sm text-neutral-700">{item.summary}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-neutral-600">{fmt(item.publishedAt)}</span>
+                <span className="text-xs text-neutral-500">•</span>
+                <span className="text-xs text-neutral-600">{item.channel}</span>
+                {item.tags?.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTag(t)}
+                    className="text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                  >
+                    #{t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </article>
         ))}
-      </select>
-    </div>
-  )
-}
+      </main>
 
-function VideoCard({ v }: { v: VideoItem }) {
-  return (
-    <article className="rounded-2xl border bg-white shadow-sm overflow-hidden">
-      <div className="relative aspect-video">
-        <iframe
-          className="absolute inset-0 h-full w-full"
-          src={`https://www.youtube-nocookie.com/embed/${v.id}`}
-          title={v.title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-          loading="lazy"
-        />
-      </div>
-      <div className="p-4">
-        <h3 className="font-medium leading-snug line-clamp-2">{v.title}</h3>
-        <div className="mt-1 text-xs opacity-70">
-          <span>{v.channelTitle}</span>
-          <span> • {new Date(v.publishedAt).toLocaleDateString()}</span>
-        </div>
-      </div>
-    </article>
+      <footer className="max-w-6xl mx-auto px-4 pb-10 text-xs text-neutral-500">
+        Curated regenerative agriculture content for sustainable island ecosystems.
+      </footer>
+    </div>
   )
 }
