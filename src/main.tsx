@@ -1,10 +1,23 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import App from './App'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
 import './index.css'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+// Check if we should run in offline mode
+console.log('🔍 Environment check:', {
+  VITE_OFFLINE_WORKER: import.meta.env.VITE_OFFLINE_WORKER,
+  NODE_ENV: import.meta.env.NODE_ENV
+});
+
+if (import.meta.env.VITE_OFFLINE_WORKER === 'true') {
+  (window as any).OFFLINE_WORKER = true;
+  console.log('📁 OFFLINE MODE: Worker disabled, using local content');
+} else {
+  console.log('🌐 ONLINE MODE: Will try worker first');
+}
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
     <App />
-  </StrictMode>
+  </React.StrictMode>,
 )

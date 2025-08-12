@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { calculateRelevanceScore, getScoreboard, type Item } from '../utils/scoring';
+import { calculateRelevanceScore, getScoreboard } from '../utils/scoring';
+import { fetchLatestNews, type Item } from '../utils/newsFetcher';
 import TextCard from './TextCard';
 import VideoCard from './VideoCard';
 
@@ -41,6 +42,8 @@ export default function ContentDashboard({
   const [videoItems, setVideoItems] = useState<VideoItem[]>([]);
   const [scoreboard, setScoreboard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState<string | null>(null);
 
   // Unified filtering state
   const [query, setQuery] = useState(globalQuery);
@@ -63,27 +66,52 @@ export default function ContentDashboard({
   // Fetch all data
   useEffect(() => {
     const fetchAllData = async () => {
+      console.log('🚀 Starting to fetch all data...');
       setLoading(true);
       try {
-        const [newsResponse, videoResponse] = await Promise.all([
-          fetch('/sample_texts.json'),
-          fetch('/sample_videos.json')
-        ]);
+        // Try to fetch from worker first, fallback to static JSON
+        let newsData: Item[] = [];
+        try {
+          console.log('🔄 Fetching news from worker...');
+          newsData = await fetchLatestNews();
+          console.log(`✅ Worker returned ${newsData.length} news items`);
+        } catch (workerError) {
+          console.warn('⚠️ Worker unavailable, falling back to static JSON:', workerError);
+          // Fallback to static JSON
+          const newsResponse = await fetch('/sample_texts.json');
+          newsData = await newsResponse.json() || [];
+        }
 
-        const newsData = await newsResponse.json() || [];
-        const videoData = await videoResponse.json() || [];
+        // Fetch videos from news fixture file
+        console.log('🎥 Fetching videos from news fixture...');
+        const videoResponse = await fetch('/news_fixture.json');
+        const allContent = await videoResponse.json() || [];
+        const videoData = allContent.filter((item: any) => item.type === 'video');
+        console.log(`✅ Loaded ${videoData.length} videos from news fixture`);
 
         // Add type identifiers
+        console.log('🏷️ Adding type identifiers...');
         const typedNews = newsData.map((item: Item): NewsItem => ({ ...item, type: 'news' }));
         const typedVideos = videoData.map((item: any): VideoItem => ({ ...item, type: 'video' }));
 
+        console.log(`📰 Setting ${typedNews.length} news items`);
+        console.log(`🎥 Setting ${typedVideos.length} video items`);
+        
         setNewsItems(typedNews);
         setVideoItems(typedVideos);
+        
+        // Set last fetch time if we got news from worker
+        if (newsData.length > 0) {
+          setLastFetchTime(new Date().toISOString());
+        }
+        
+        console.log('✅ All data loaded successfully');
       } catch (error) {
-        console.error('Failed to fetch content:', error);
+        console.error('❌ Failed to fetch content:', error);
         setNewsItems([]);
         setVideoItems([]);
       } finally {
+        console.log('🔄 Setting loading to false');
         setLoading(false);
       }
     };
@@ -192,9 +220,47 @@ export default function ContentDashboard({
     );
   }
 
+  // Function to manually refresh news from worker
+  const refreshNews = async () => {
+    setRefreshing(true);
+    try {
+      console.log('🔄 Manually refreshing news from worker...');
+      const freshNews = await fetchLatestNews();
+      const typedNews = freshNews.map((item: Item): NewsItem => ({ ...item, type: 'news' }));
+      setNewsItems(typedNews);
+      setLastFetchTime(new Date().toISOString());
+      console.log(`✅ Refreshed ${freshNews.length} news items`);
+    } catch (error) {
+      console.error('❌ Failed to refresh news:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <div className="text-neutral-900 bg-white w-full">
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* News Status and Refresh Section */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-900">News Status</h3>
+              <p className="text-blue-700 text-sm">
+                {newsItems.length} news items loaded
+                {lastFetchTime && ` • Last updated: ${new Date(lastFetchTime).toLocaleString()}`}
+
+              </p>
+            </div>
+            <button
+              onClick={refreshNews}
+              disabled={refreshing}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              {refreshing ? '🔄 Refreshing...' : '🔄 Refresh News'}
+            </button>
+          </div>
+        </div>
+
         {filtered.map((item) => (
           item.type === 'news' ? (
                       <TextCard

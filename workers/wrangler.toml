@@ -1,0 +1,17 @@
+name = "news-fetcher"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# KV namespace for storing news data
+[[kv_namespaces]]
+binding = "NEWS_KV"
+id = "89cb3ade04334395a6b23ab6880bb4bd"
+
+[triggers]
+crons = ["0 6 * * *"]  # 6 AM GMT daily
+
+[env.production]
+name = "news-fetcher-prod"
+
+[env.staging]
+name = "news-fetcher-staging"

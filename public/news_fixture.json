@@ -1,0 +1,112 @@
+[
+  {
+    "id": "1",
+    "title": "Marine protected area proposal advances for the Azores",
+    "source": "Governo dos Açores",
+    "url": "https://example.org/azores-mpa",
+    "publishedAt": "2025-08-05T06:00:00Z",
+    "tags": ["marine", "policy", "azores"],
+    "summary": "Regional assembly reviews expansion of high-protection zones; stakeholder consultation opens next week.",
+    "type": "news"
+  },
+  {
+    "id": "2",
+    "title": "São Miguel freshwater monitoring program releases Q2 data",
+    "source": "Universidade dos Açores",
+    "url": "https://example.org/freshwater-q2",
+    "publishedAt": "2025-08-07T08:30:00Z",
+    "tags": ["freshwater", "monitoring", "sao-miguel"],
+    "summary": "Diatom indicators suggest early warming signals; program to expand sampling sites in Sete Cidades.",
+    "type": "news"
+  },
+  {
+    "id": "3",
+    "title": "EU habitat funding window opens for island restoration",
+    "source": "EU Environment",
+    "url": "https://example.org/eu-habitat-funding",
+    "publishedAt": "2025-08-09T12:00:00Z",
+    "tags": ["funding", "policy", "eu"],
+    "summary": "Calls prioritize Natura 2000 and island biodiversity; proposals emphasizing community stewardship encouraged.",
+    "type": "news"
+  },
+  {
+    "id": "4",
+    "title": "Regenerative agroforestry pilot expands to Atlantic islands",
+    "source": "FAO Agroecology",
+    "url": "https://example.org/agroforestry-atlantic",
+    "publishedAt": "2025-08-01T10:10:00Z",
+    "tags": ["agroforestry", "regeneration", "practice"],
+    "summary": "Syntropic rows trialed with windbreaks and water harvesting on smallholdings; open technical brief released.",
+    "type": "news"
+  },
+  {
+    "id": "video-1",
+    "title": "Syntropic Agroforestry: The Future of Farming",
+    "source": "Discover Permaculture",
+    "url": "https://www.youtube.com/watch?v=9nb12j61b-E",
+    "publishedAt": "2024-12-15T10:00:00Z",
+    "tags": ["agroforestry", "regeneration", "syntropic", "farming"],
+    "summary": "Explore how syntropic agroforestry creates self-sustaining food forests that mimic natural ecosystems and regenerate degraded land.",
+    "type": "video",
+    "thumbnail": "https://img.youtube.com/vi/9nb12j61b-E/maxresdefault.jpg",
+    "duration": "PT15M32S",
+    "channel": "@DiscoverPermaculture",
+    "transcript": "[Transcript available] This video has closed captions or transcripts available on YouTube. The content covers syntropic agroforestry principles and implementation."
+  },
+  {
+    "id": "video-2",
+    "title": "Coastal Permaculture: Working with Ocean Ecosystems",
+    "source": "Discover Permaculture",
+    "url": "https://www.youtube.com/watch?v=8wf3ue03qEw",
+    "publishedAt": "2024-11-28T14:30:00Z",
+    "tags": ["coastal", "marine", "permaculture", "ocean"],
+    "summary": "Learn how to design permaculture systems that work with coastal conditions, salt spray, and marine-influenced microclimates.",
+    "type": "video",
+    "thumbnail": "https://img.youtube.com/vi/8wf3ue03qEw/maxresdefault.jpg",
+    "duration": "PT22M15S",
+    "channel": "@DiscoverPermaculture",
+    "transcript": "[Transcript available] This video has closed captions or transcripts available on YouTube. The content covers coastal permaculture design and ocean ecosystem integration."
+  },
+  {
+    "id": "video-3",
+    "title": "Island Agriculture: Adapting to Limited Resources",
+    "source": "amillison",
+    "url": "https://www.youtube.com/watch?v=24uCCr3KjCI",
+    "publishedAt": "2024-12-10T16:00:00Z",
+    "tags": ["island", "agriculture", "resources", "adaptation"],
+    "summary": "Discover innovative farming techniques for island environments where resources are limited and self-sufficiency is essential.",
+    "type": "video",
+    "thumbnail": "https://img.youtube.com/vi/24uCCr3KjCI/maxresdefault.jpg",
+    "duration": "PT18M45S",
+    "channel": "@amillison",
+    "transcript": "[Transcript available] This video has closed captions or transcripts available on YouTube. The content covers island agriculture techniques and resource management."
+  },
+  {
+    "id": "video-4",
+    "title": "Regenerative Water Systems for Dry Climates",
+    "source": "Discover Permaculture",
+    "url": "https://www.youtube.com/watch?v=3K1BYs5JC6U",
+    "publishedAt": "2024-11-20T12:00:00Z",
+    "tags": ["water", "regeneration", "dry-climate", "hydrology"],
+    "summary": "Learn water harvesting and management techniques that restore aquifers and create resilient agricultural systems in arid regions.",
+    "type": "video",
+    "thumbnail": "https://img.youtube.com/vi/3K1BYs5JC6U/maxresdefault.jpg",
+    "duration": "PT25M10S",
+    "channel": "@DiscoverPermaculture",
+    "transcript": "[Transcript available] This video has closed captions or transcripts available on YouTube. The content covers water harvesting systems for dry climate agriculture."
+  },
+  {
+    "id": "video-5",
+    "title": "Building Soil Health with Agroecological Methods",
+    "source": "amillison",
+    "url": "https://www.youtube.com/watch?v=1LCTVO_Y5Rs",
+    "publishedAt": "2024-12-05T09:15:00Z",
+    "tags": ["soil", "agroecology", "health", "regeneration"],
+    "summary": "Explore practical methods for building healthy, living soils that support productive agriculture and ecosystem restoration.",
+    "type": "video",
+    "thumbnail": "https://img.youtube.com/vi/1LCTVO_Y5Rs/maxresdefault.jpg",
+    "duration": "PT20M30S",
+    "channel": "@amillison",
+    "transcript": "[Transcript available] This video has closed captions or transcripts available on YouTube. The content covers soil health building through agroecological methods."
+  }
+]
