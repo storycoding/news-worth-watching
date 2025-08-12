@@ -137,20 +137,16 @@ export default function VideoGallery({ src = '/sample_videos.json' }: { src?: st
         {filtered.map((item) => (
           <article key={item.id} className="group rounded-2xl border bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden">
             <div className="relative aspect-video">
-              <img 
-                src={item.thumbnail} 
-                alt={item.title}
-                className="w-full h-full object-cover"
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${item.url.split('v=')[1]}`}
+                title={item.title}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                loading="lazy"
               />
               <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
                 {formatDuration(item.duration)}
-              </div>
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
-                <div className="bg-red-600 text-white p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                  </svg>
-                </div>
               </div>
             </div>
             <div className="p-4">
