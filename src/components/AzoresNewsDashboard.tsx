@@ -25,7 +25,7 @@ function score(item: Item): number {
   return s;
 }
 
-export default function AzoresNewsDashboard({ src = './src/assets/static/sample_texts.json' }: { src?: string }) {
+export default function AzoresNewsDashboard({ src = '/sample_texts.json' }: { src?: string }) {
   const [items, setItems] = useState<Item[]>([]);
   const [query, setQuery] = useState("");
   const [tag, setTag] = useState<string | null>(null);

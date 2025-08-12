@@ -14,7 +14,7 @@ type VideoItem = {
 
 type DataShape = { generatedAt: string; count: number; items: VideoItem[] }
 
-export default function VideoGallery({ src = './static/sample_videos.json' }: { src?: string }) {
+export default function VideoGallery({ src = '/sample_videos.json' }: { src?: string }) {
   const [data, setData] = useState<DataShape | null>(null)
   const [q, setQ] = useState('')
   const [channel, setChannel] = useState('')
