@@ -1,0 +1,38 @@
+[
+  {
+    "id": "1",
+    "title": "Marine protected area proposal advances for the Azores",
+    "source": "Governo dos Açores",
+    "url": "https://example.org/azores-mpa",
+    "publishedAt": "2025-08-09T12:00:00Z",
+    "tags": ["marine", "policy", "azores"],
+    "summary": "Regional assembly reviews expansion of high-protection zones; stakeholder consultation opens next week."
+  },
+  {
+    "id": "2",
+    "title": "São Miguel freshwater monitoring program releases Q2 data",
+    "source": "Universidade dos Açores",
+    "url": "https://example.org/freshwater-q2",
+    "publishedAt": "2025-08-07T08:30:00Z",
+    "tags": ["freshwater", "monitoring", "sao-miguel"],
+    "summary": "Diatom indicators suggest early warming signals; program to expand sampling sites in Sete Cidades."
+  },
+  {
+    "id": "3",
+    "title": "EU habitat funding window opens for island restoration",
+    "source": "EU Environment",
+    "url": "https://example.org/eu-habitat-funding",
+    "publishedAt": "2025-08-05T06:00:00Z",
+    "tags": ["funding", "policy", "eu"],
+    "summary": "Calls prioritize Natura 2000 and island biodiversity; proposals emphasizing community stewardship encouraged."
+  },
+  {
+    "id": "4",
+    "title": "Regenerative agroforestry pilot expands to Atlantic islands",
+    "source": "FAO Agroecology",
+    "url": "https://example.org/agroforestry-atlantic",
+    "publishedAt": "2025-08-01T10:10:00Z",
+    "tags": ["agroforestry", "regeneration", "practice"],
+    "summary": "Syntropic rows trialed with windbreaks and water harvesting on smallholdings; open technical brief released."
+  }
+]

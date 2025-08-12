@@ -1,0 +1,7 @@
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer-when-downgrade
+  Permissions-Policy: autoplay=*, camera=(), microphone=(), geolocation=()
+  Cache-Control: public, max-age=300, s-maxage=600
+*/
