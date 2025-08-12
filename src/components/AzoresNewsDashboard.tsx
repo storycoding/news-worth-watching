@@ -2,20 +2,32 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { calculateRelevanceScore, getScoreboard, type Item } from "../utils/scoring";
+import TextCard from './TextCard';
 
-const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString() : "");
 const uniq = <T,>(arr: T[]) => Array.from(new Set(arr));
 
-export default function AzoresNewsDashboard({ src = '/sample_texts.json' }: { src?: string }) {
+export default function AzoresNewsDashboard({ 
+  src = '/sample_texts.json',
+  globalQuery = "",
+  globalTag = null,
+  globalSource = null,
+  globalSort = "recent" as "relevance" | "recent"
+}: { 
+  src?: string;
+  globalQuery?: string;
+  globalTag?: string | null;
+  globalSource?: string | null;
+  globalSort?: "relevance" | "recent";
+}) {
   const [items, setItems] = useState<Item[]>([]);
   const [scoreboard, setScoreboard] = useState<any>(null);
   
-  // Get initial values from URL params
+  // Use global filters if provided, otherwise fall back to URL params
   const urlParams = new URLSearchParams(window.location.search);
-  const [query, setQuery] = useState(urlParams.get("q") || "");
-  const [tag, setTag] = useState<string | null>(urlParams.get("tag"));
-  const [source, setSource] = useState<string | null>(urlParams.get("source"));
-  const [sort, setSort] = useState<"relevance" | "recent">((urlParams.get("sort") as "relevance" | "recent") || "recent");
+  const [query, setQuery] = useState(globalQuery || urlParams.get("q") || "");
+  const [tag, setTag] = useState<string | null>(globalTag ?? urlParams.get("tag"));
+  const [source, setSource] = useState<string | null>(globalSource ?? urlParams.get("source"));
+  const [sort, setSort] = useState<"relevance" | "recent">(globalSort || (urlParams.get("sort") as "relevance" | "recent") || "recent");
 
   // Function to update URL params
   const updateURL = (updates: Record<string, string | null>) => {
@@ -98,65 +110,19 @@ export default function AzoresNewsDashboard({ src = '/sample_texts.json' }: { sr
             <p className="text-sm text-neutral-600">Noise-free curation for São Miguel · Azores · analogous ecosystems</p>
           </div>
           <div className="flex gap-2 flex-wrap items-center text-white">
-            {/* <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search titles & summaries"
-              className="px-3 py-2 rounded-xl border w-64"
-            /> */}
-            <select value={tag ?? ""} onChange={(e) => setTag(e.target.value || null)} className="px-3 py-2 rounded-xl border">
-              <option value="">All tags</option>
-              {tags.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <select value={source ?? ""} onChange={(e) => setSource(e.target.value || null)} className="px-3 py-2 rounded-xl border">
-              <option value="">All sources</option>
-              {sources.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <select value={sort} onChange={(e) => setSort(e.target.value as "relevance" | "recent")} className="px-3 py-2 rounded-xl border">
-              <option value="relevance">Sort: Relevance</option>
-              <option value="recent">Sort: Recent</option>
-            </select>
+            {/* Individual search controls removed - now handled by unified search */}
           </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((item) => (
-          <article key={item.id} className="group rounded-2xl border bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between gap-3">
-              <h2 className="text-lg font-semibold leading-snug">
-                <a href={item.url} target="_blank" rel="noreferrer" className="hover:underline">
-                  {item.title}
-                </a>
-              </h2>
-              <span className="text-xs px-2 py-1 rounded-full bg-neutral-100 border">
-                {scoreboard ? calculateRelevanceScore(item, scoreboard).toFixed(1) : '-'}
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-neutral-700">{item.summary}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-xs text-neutral-600">{fmt(item.publishedAt)}</span>
-              <span className="text-xs text-neutral-500">·</span>
-              <span className="text-xs text-neutral-700">{item.source}</span>
-              {item.tags?.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTag(t)}
-                  className="text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                >
-                  #{t}
-                </button>
-              ))}
-            </div>
-          </article>
+          <TextCard
+            key={item.id}
+            item={item}
+            scoreboard={scoreboard}
+            onTagClick={setTag}
+          />
         ))}
       </main>
     </div>

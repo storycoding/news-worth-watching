@@ -33,7 +33,7 @@ export default function SourcesSection() {
 
   if (loading) {
     return (
-      <section className="max-w-6xl mx-auto px-4 pb-10">
+      <section className="max-w-4xl mx-auto px-4 pb-10">
         <div className="rounded-2xl border bg-white p-4">
           <p className="text-sm text-neutral-600">Loading sources...</p>
         </div>
@@ -42,7 +42,7 @@ export default function SourcesSection() {
   }
 
   return (
-    <section className="max-w-6xl mx-auto px-4 pb-10">
+    <section className="max-w-4xl mx-auto px-4 pb-10">
       <div className="rounded-2xl p-4">
         <h3 className="font-semibold mb-2 text-gray-500">Sources</h3>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
