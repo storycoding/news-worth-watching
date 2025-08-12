@@ -5,11 +5,17 @@
     "source": "Discover Permaculture",
     "url": "https://www.youtube.com/watch?v=9nb12j61b-E",
     "publishedAt": "2024-12-15T10:00:00Z",
-    "tags": ["agroforestry", "regeneration", "syntropic", "farming"],
+    "tags": [
+      "agroforestry",
+      "regeneration",
+      "syntropic",
+      "farming"
+    ],
     "summary": "Explore how syntropic agroforestry creates self-sustaining food forests that mimic natural ecosystems and regenerate degraded land.",
     "thumbnail": "https://img.youtube.com/vi/9nb12j61b-E/maxresdefault.jpg",
     "duration": "PT15M32S",
-    "channel": "@DiscoverPermaculture"
+    "channel": "@DiscoverPermaculture",
+    "transcript": "[Transcript available] This video has closed captions or transcripts available on YouTube. The content covers syntropic agroforestry principles and implementation."
   },
   {
     "id": "2",
@@ -17,11 +23,17 @@
     "source": "Discover Permaculture",
     "url": "https://www.youtube.com/watch?v=8wf3ue03qEw",
     "publishedAt": "2024-11-28T14:30:00Z",
-    "tags": ["coastal", "marine", "permaculture", "ocean"],
+    "tags": [
+      "coastal",
+      "marine",
+      "permaculture",
+      "ocean"
+    ],
     "summary": "Learn how to design permaculture systems that work with coastal conditions, salt spray, and marine-influenced microclimates.",
     "thumbnail": "https://img.youtube.com/vi/8wf3ue03qEw/maxresdefault.jpg",
     "duration": "PT22M15S",
-    "channel": "@DiscoverPermaculture"
+    "channel": "@DiscoverPermaculture",
+    "transcript": "[Transcript available] This video has closed captions or transcripts available on YouTube. The content covers coastal permaculture design and ocean ecosystem integration."
   },
   {
     "id": "3",
@@ -29,11 +41,17 @@
     "source": "amillison",
     "url": "https://www.youtube.com/watch?v=24uCCr3KjCI",
     "publishedAt": "2024-12-10T16:00:00Z",
-    "tags": ["island", "agriculture", "resources", "adaptation"],
+    "tags": [
+      "island",
+      "agriculture",
+      "resources",
+      "adaptation"
+    ],
     "summary": "Discover innovative farming techniques for island environments where resources are limited and self-sufficiency is essential.",
     "thumbnail": "https://img.youtube.com/vi/24uCCr3KjCI/maxresdefault.jpg",
     "duration": "PT18M45S",
-    "channel": "@amillison"
+    "channel": "@amillison",
+    "transcript": "[Transcript available] This video has closed captions or transcripts available on YouTube. The content covers island agriculture techniques and resource management."
   },
   {
     "id": "4",
@@ -41,11 +59,17 @@
     "source": "Discover Permaculture",
     "url": "https://www.youtube.com/watch?v=3K1BYs5JC6U",
     "publishedAt": "2024-11-20T12:00:00Z",
-    "tags": ["water", "regeneration", "dry-climate", "hydrology"],
+    "tags": [
+      "water",
+      "regeneration",
+      "dry-climate",
+      "hydrology"
+    ],
     "summary": "Learn water harvesting and management techniques that restore aquifers and create resilient agricultural systems in arid regions.",
     "thumbnail": "https://img.youtube.com/vi/3K1BYs5JC6U/maxresdefault.jpg",
     "duration": "PT25M10S",
-    "channel": "@DiscoverPermaculture"
+    "channel": "@DiscoverPermaculture",
+    "transcript": "[Transcript available] This video has closed captions or transcripts available on YouTube. The content covers water harvesting systems for dry climate agriculture."
   },
   {
     "id": "5",
@@ -53,10 +77,16 @@
     "source": "amillison",
     "url": "https://www.youtube.com/watch?v=1LCTVO_Y5Rs",
     "publishedAt": "2024-12-05T09:15:00Z",
-    "tags": ["soil", "agroecology", "health", "regeneration"],
+    "tags": [
+      "soil",
+      "agroecology",
+      "health",
+      "regeneration"
+    ],
     "summary": "Explore practical methods for building healthy, living soils that support productive agriculture and ecosystem restoration.",
     "thumbnail": "https://img.youtube.com/vi/1LCTVO_Y5Rs/maxresdefault.jpg",
     "duration": "PT20M30S",
-    "channel": "@amillison"
+    "channel": "@amillison",
+    "transcript": "[Transcript available] This video has closed captions or transcripts available on YouTube. The content covers soil health building through agroecological methods."
   }
 ]

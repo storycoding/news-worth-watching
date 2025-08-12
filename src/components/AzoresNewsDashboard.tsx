@@ -159,56 +159,6 @@ export default function AzoresNewsDashboard({ src = '/sample_texts.json' }: { sr
           </article>
         ))}
       </main>
-
-      <aside className="max-w-6xl mx-auto px-4 pb-10">
-        <div className="rounded-2xl border bg-white p-4">
-          <h3 className="font-semibold mb-2">Sources (configurable)</h3>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                name: "Azores · Policy & Regional",
-                sources: [
-                  { label: "Governo dos Açores", url: "https://www.azores.gov.pt/rss" },
-                  { label: "Diário da República", url: "https://dre.pt/rss" },
-                  { label: "INOVA (Inovação Açores)", url: "https://inova.azores.gov.pt/rss" },
-                ],
-              },
-              {
-                name: "São Miguel · Environment & Research",
-                sources: [
-                  { label: "Azores Geopark", url: "https://azoresgeopark.com/feed" },
-                  { label: "Universidade dos Açores", url: "https://www.uac.pt/rss" },
-                  { label: "Nature/Science (Azores)", url: "https://www.nature.com/subjects/island-biology.rss" },
-                ],
-              },
-              {
-                name: "Permaculture & Regeneration",
-                sources: [
-                  { label: "FAO Agroecology", url: "https://www.fao.org/agroecology/rss/en/" },
-                  { label: "Regeneration.org", url: "https://www.regeneration.org/rss" },
-                  { label: "EU Environment", url: "https://environment.ec.europa.eu/news_en?format=rss" },
-                ],
-              },
-            ].map((g) => (
-              <div key={g.name} className="rounded-xl border p-3">
-                <div className="text-sm font-medium mb-1">{g.name}</div>
-                <ul className="text-sm list-disc list-inside text-neutral-700">
-                  {g.sources.map((s) => (
-                    <li key={s.label}>
-                      <a className="hover:underline" href={s.url} target="_blank" rel="noreferrer">
-                        {s.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-neutral-600 mt-3">Tip: Move these URLs to a backend Worker that fetches & normalizes feeds, then expose /api/news.</p>
-        </div>
-      </aside>
-
-      <footer className="max-w-6xl mx-auto px-4 pb-10 text-xs text-neutral-500">Built for a sovereign information diet: pre-curated sources, scoring, and noise controls.</footer>
     </div>
   );
 }

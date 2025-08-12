@@ -1,5 +1,6 @@
 import VideoGallery from './components/VideoGallery'
 import AzoresNewsDashboard from "./components/AzoresNewsDashboard";
+import SourcesSection from "./components/SourcesSection";
 
 
 export default function App() {
@@ -14,7 +15,11 @@ export default function App() {
         <VideoGallery />
       </section>
 
-      <footer className="mt-16 border-t pt-6 text-xs opacity-60">
+      <section className="mb-10">
+        <SourcesSection />
+      </section>
+
+      <footer className="max-w-6xl mx-auto px-4 pb-10 text-xs text-neutral-500">
         <p>© {new Date().getFullYear()} Served by Nuno Neves</p>
       </footer>
     </div>

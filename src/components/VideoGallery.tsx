@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { cleanTranscriptText } from '../utils/transcript'
 
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString() : "")
 
@@ -13,6 +14,7 @@ type VideoItem = {
   thumbnail: string
   duration: string
   channel: string
+  transcript?: string
 }
 
 export default function VideoGallery({ src = '/sample_videos.json' }: { src?: string }) {
@@ -96,7 +98,7 @@ export default function VideoGallery({ src = '/sample_videos.json' }: { src?: st
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
-      <header>
+      {/* <header>
         <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold">Regenerative Agriculture Video Library</h1>
@@ -131,7 +133,7 @@ export default function VideoGallery({ src = '/sample_videos.json' }: { src?: st
             </select>
           </div>
         </div>
-      </header>
+      </header> */}
 
       <main className="max-w-6xl mx-auto px-4 py-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((item) => (
@@ -158,6 +160,13 @@ export default function VideoGallery({ src = '/sample_videos.json' }: { src?: st
                 </h2>
               </div>
               <p className="mt-2 text-sm text-neutral-700">{item.summary}</p>
+              {item.transcript && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-800">
+                    <span className="font-medium">Transcript:</span> {cleanTranscriptText(item.transcript)}
+                  </p>
+                </div>
+              )}
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className="text-xs text-neutral-600">{fmt(item.publishedAt)}</span>
                 <span className="text-xs text-neutral-500">•</span>
@@ -176,10 +185,6 @@ export default function VideoGallery({ src = '/sample_videos.json' }: { src?: st
           </article>
         ))}
       </main>
-
-      <footer className="max-w-6xl mx-auto px-4 pb-10 text-xs text-neutral-500">
-        Curated regenerative agriculture content for sustainable island ecosystems.
-      </footer>
     </div>
   )
 }
