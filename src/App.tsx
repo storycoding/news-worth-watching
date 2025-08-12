@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import ContentDashboard from "./components/ContentDashboard";
 import SourcesSection from "./components/SourcesSection";
 import UnifiedSearch from "./components/UnifiedSearch";
@@ -9,9 +9,8 @@ export default function App() {
   const [tags, setTags] = useState<string[]>([]);
   const [sort, setSort] = useState<"relevance" | "recent">("recent");
 
-  // Placeholder for tags and sources - these will be populated by ContentDashboard
+  // Placeholder for tags - these will be populated by ContentDashboard
   const [allTags, setAllTags] = useState<string[]>([]);
-  const [allSources, setAllSources] = useState<string[]>([]);
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -32,10 +31,7 @@ export default function App() {
           setTags={setTags}
           sort={sort}
           setSort={setSort}
-          contentType="all"
-          setContentType={() => {}}
           allTags={allTags}
-          allSources={allSources}
         />
 
         {/* Unified Content Dashboard */}
@@ -44,9 +40,8 @@ export default function App() {
             globalQuery={query}
             globalTags={tags}
             globalSort={sort}
-            onTagsAndSourcesUpdate={(tags, sources) => {
+            onTagsAndSourcesUpdate={(tags) => {
               setAllTags(tags);
-              setAllSources(sources);
             }}
           />
         </section>

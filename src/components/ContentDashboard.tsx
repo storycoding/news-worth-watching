@@ -28,7 +28,7 @@ type ContentDashboardProps = {
   globalQuery?: string;
   globalTags?: string[];
   globalSort?: "relevance" | "recent";
-  onTagsAndSourcesUpdate?: (tags: string[], sources: string[]) => void;
+  onTagsAndSourcesUpdate?: (tags: string[]) => void;
 };
 
 export default function ContentDashboard({
@@ -105,7 +105,7 @@ export default function ContentDashboard({
     loadScoreboard();
   }, []);
 
-  // Extract all available tags and sources
+  // Extract all available tags
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
     [...newsItems, ...videoItems].forEach(item => {
@@ -114,27 +114,18 @@ export default function ContentDashboard({
     return Array.from(tagSet).sort();
   }, [newsItems, videoItems]);
 
-  const allSources = useMemo(() => {
-    const sourceSet = new Set<string>();
-    [...newsItems, ...videoItems].forEach(item => {
-      sourceSet.add(item.source);
-    });
-    return Array.from(sourceSet).sort();
-  }, [newsItems, videoItems]);
-
-  // Notify parent component when tags and sources are available
+  // Notify parent component when tags are available
   useEffect(() => {
-    if (onTagsAndSourcesUpdate && allTags.length > 0 && allSources.length > 0) {
-      onTagsAndSourcesUpdate(allTags, allSources);
+    if (onTagsAndSourcesUpdate && allTags.length > 0) {
+      onTagsAndSourcesUpdate(allTags);
     }
-  }, [allTags, allSources, onTagsAndSourcesUpdate]);
+  }, [allTags, onTagsAndSourcesUpdate]);
 
   // Unified filtering and sorting
   const filtered = useMemo(() => {
     let allContent: ContentItem[] = [...newsItems, ...videoItems];
 
-    // Debug logging for filters
-    console.log('Filtering with:', { query, tags, sort, totalItems: allContent.length });
+
 
     // Apply query filter
     if (query.trim()) {
@@ -182,24 +173,13 @@ export default function ContentDashboard({
         const scoreA = getRelevanceScore(a);
         const scoreB = getRelevanceScore(b);
         
-        // Debug logging for relevance sorting
-        if (sort === "relevance") {
-          console.log(`Sorting: ${a.title} (${a.type}) score: ${scoreA} vs ${b.title} (${b.type}) score: ${scoreB}`);
-        }
+
         
         return scoreB - scoreA;
       }
     });
 
-    // Debug logging for final results
-    console.log('Filtered results:', allContent.length, 'items');
-    if (sort === "relevance") {
-      console.log('Top 3 by relevance:', allContent.slice(0, 3).map(item => ({
-        title: item.title,
-        type: item.type,
-        score: item.type === 'news' && scoreboard ? calculateRelevanceScore(item, scoreboard) : 'N/A'
-      })));
-    }
+
 
     return allContent;
   }, [newsItems, videoItems, query, tags, sort, scoreboard]);

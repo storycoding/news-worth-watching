@@ -7,10 +7,7 @@ type UnifiedSearchProps = {
   setTags: (tags: string[]) => void;
   sort: "relevance" | "recent";
   setSort: (sort: "relevance" | "recent") => void;
-  contentType: string;
-  setContentType: (type: string) => void;
   allTags: string[];
-  allSources: string[];
 };
 
 export default function UnifiedSearch({
@@ -20,10 +17,7 @@ export default function UnifiedSearch({
   setTags,
   sort,
   setSort,
-  contentType,
-  setContentType,
   allTags,
-  allSources,
 }: UnifiedSearchProps) {
   return (
     <div className="bg-white top-0 z-10">
