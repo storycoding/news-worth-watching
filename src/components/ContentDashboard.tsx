@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { calculateRelevanceScore, getScoreboard } from '../utils/scoring';
 import { loadStoredNews, scrapeLatestNews, type Item } from '../utils/newsFetcher';
 import { loadFixtureData, getNewsFromFixture, getVideosFromFixture } from '../utils/fixtureLoader';
+import { WORKER_TIMEOUT, WORKER_TIMEOUT_SECONDS, TIMEOUT_COUNTER_INTERVAL } from '../utils/constants';
 import TextCard from './TextCard';
 import VideoCard from './VideoCard';
 
@@ -45,6 +46,8 @@ export default function ContentDashboard({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState<string | null>(null);
+  const [timeoutCounter, setTimeoutCounter] = useState<number>(0);
+  const [timeoutInterval, setTimeoutInterval] = useState<ReturnType<typeof setInterval> | null>(null);
 
   // Unified filtering state
   const [query, setQuery] = useState(globalQuery);
@@ -260,11 +263,19 @@ export default function ContentDashboard({
   // Function to manually refresh news from worker
   const refreshNews = async () => {
     setRefreshing(true);
+    setTimeoutCounter(0);
+    
+          // Start timeout counter
+      const interval = setInterval(() => {
+        setTimeoutCounter(prev => prev + 1);
+      }, TIMEOUT_COUNTER_INTERVAL);
+      setTimeoutInterval(interval);
+    
     try {
       console.log('🔄 Manually refreshing news from worker...');
       
-      // Use the new scrapeLatestNews function that handles everything
-      const scrapeResult = await scrapeLatestNews();
+      // Use the new scrapeLatestNews function with timeout
+      const scrapeResult = await scrapeLatestNews({ timeout: WORKER_TIMEOUT });
       
       if (scrapeResult.success && scrapeResult.lastCronRun) {
         console.log(`📅 New cron run timestamp: ${scrapeResult.lastCronRun}`);
@@ -277,12 +288,23 @@ export default function ContentDashboard({
           console.log(`✅ Refreshed ${typedNews.length} news items`);
         }
       } else {
-        console.error('❌ Failed to scrape latest news');
+        console.error('❌ Failed to scrape latest news:', scrapeResult.error);
+        // Show error to user
+        alert(`Failed to refresh news: ${scrapeResult.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('❌ Failed to refresh news:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to refresh news: ${errorMessage}`);
     } finally {
       setRefreshing(false);
+      setTimeoutCounter(0);
+      
+      // Clear timeout interval
+      if (interval) {
+        clearInterval(interval);
+        setTimeoutInterval(null);
+      }
     }
   };
 
@@ -302,9 +324,28 @@ export default function ContentDashboard({
             <button
               onClick={refreshNews}
               disabled={refreshing}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors relative overflow-hidden"
             >
-              {refreshing ? '🔄 Refreshing...' : '🔄 Refresh News'}
+              {refreshing ? (
+                <div className="flex items-center space-x-2">
+                  <span>🔄 Refreshing...</span>
+                  <span className="text-xs opacity-75">
+                    ({timeoutCounter}s / {WORKER_TIMEOUT_SECONDS}s)
+                  </span>
+                </div>
+              ) : (
+                '🔄 Refresh News'
+              )}
+              
+              {/* Subtle progress bar */}
+              {refreshing && (
+                <div 
+                  className="absolute bottom-0 left-0 h-1 bg-blue-300 transition-all duration-1000 ease-linear"
+                  style={{ 
+                    width: `${(timeoutCounter / WORKER_TIMEOUT_SECONDS) * 100}%` 
+                  }}
+                />
+              )}
             </button>
           </div>
         </div>

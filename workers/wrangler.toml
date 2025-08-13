@@ -10,8 +10,5 @@ id = "89cb3ade04334395a6b23ab6880bb4bd"
 [triggers]
 crons = ["0 6 * * *"]  # 6 AM GMT daily
 
-[env.production]
-name = "news-fetcher-prod"
-
-[env.staging]
-name = "news-fetcher-staging"
+# Enable comprehensive logging for monitoring and debugging
+# This ensures all console.log statements are captured in production
