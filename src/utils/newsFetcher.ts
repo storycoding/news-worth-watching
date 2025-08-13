@@ -14,7 +14,10 @@ export interface NewsResponse {
   count: number;
   news: Item[];
   fetchedAt: string;
+  lastCronRun?: string;
 }
+
+import { loadFixtureData, getNewsFromFixture } from './fixtureLoader';
 
 export interface FetchNewsOptions {
   workerUrl?: string;
@@ -26,9 +29,10 @@ export interface FetchNewsOptions {
 const DEFAULT_WORKER_URL = 'http://localhost:8787';
 
 /**
- * Fetch latest news from the Cloudflare Worker or fallback to unified content
+ * Load stored news from the Cloudflare Worker or fallback to unified content
+ * This is for fast data retrieval without any processing
  */
-export async function fetchLatestNews(options: FetchNewsOptions = {}): Promise<Item[]> {
+export async function loadStoredNews(options: FetchNewsOptions = {}): Promise<NewsResponse | Item[]> {
   // Check if we should skip worker and go straight to local content
   console.log('🔍 Offline mode check:', {
     hasWindow: typeof window !== 'undefined',
@@ -38,9 +42,8 @@ export async function fetchLatestNews(options: FetchNewsOptions = {}): Promise<I
   if (typeof window !== 'undefined' && (window as any).OFFLINE_WORKER === true) {
     try {
       console.log('📁 OFFLINE MODE: Loading directly from news fixture');
-      const response = await fetch('/news_fixture.json');
-      const allContent = await response.json();
-      const newsItems = allContent.filter((item: any) => item.type === 'news');
+      const allContent = await loadFixtureData();
+      const newsItems = getNewsFromFixture(allContent);
       console.log(`✅ Loaded ${newsItems.length} news items from news fixture`);
       return newsItems;
     } catch (error) {
@@ -52,7 +55,8 @@ export async function fetchLatestNews(options: FetchNewsOptions = {}): Promise<I
   const workerUrl = options.workerUrl || DEFAULT_WORKER_URL;
   
   try {
-    const response = await fetch(`${workerUrl}/news`);
+    console.log('📖 Loading stored news from worker...');
+    const response = await fetch(`${workerUrl}/news-loader`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -64,19 +68,17 @@ export async function fetchLatestNews(options: FetchNewsOptions = {}): Promise<I
       throw new Error('Failed to fetch news from worker');
     }
     
-    console.log(`✅ Fetched ${data.count} news items from worker`);
+    console.log(`✅ Loaded ${data.count} stored news items from worker`);
     return data.news;
     
   } catch (error) {
-    console.error('❌ Error fetching news from worker:', error);
+    console.error('❌ Error loading stored news from worker:', error);
     
-    // Fallback to news fixture file
+    // Fallback to news fixture file (only if worker is truly unavailable)
     try {
-      console.log('🔄 Worker failed, falling back to news fixture...');
-      const response = await fetch('/news_fixture.json');
-      const allContent = await response.json();
-      // Filter to only news items
-      const newsItems = allContent.filter((item: any) => item.type === 'news');
+      console.log('🔄 Worker unavailable, falling back to news fixture...');
+      const allContent = await loadFixtureData();
+      const newsItems = getNewsFromFixture(allContent);
       console.log(`✅ Fallback: Loaded ${newsItems.length} news items from news fixture`);
       return newsItems;
     } catch (fallbackError) {
@@ -87,13 +89,15 @@ export async function fetchLatestNews(options: FetchNewsOptions = {}): Promise<I
 }
 
 /**
- * Manually trigger news fetch on the worker
+ * Manually trigger news scraping on the worker
+ * This triggers the actual scraping process and updates lastCronRun
  */
-export async function triggerNewsFetch(options: FetchNewsOptions = {}): Promise<boolean> {
+export async function triggerNewsScraping(options: FetchNewsOptions = {}): Promise<{ success: boolean; lastCronRun?: string }> {
   const workerUrl = options.workerUrl || DEFAULT_WORKER_URL;
   
   try {
-    const response = await fetch(`${workerUrl}/`, {
+    console.log('🔄 Triggering news scraping on worker...');
+    const response = await fetch(`${workerUrl}/news-scraper`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -107,15 +111,45 @@ export async function triggerNewsFetch(options: FetchNewsOptions = {}): Promise<
     const data = await response.json();
     
     if (data.success) {
-      console.log(`✅ News fetch triggered successfully: ${data.count} items`);
-      return true;
+      console.log(`✅ News scraping triggered successfully: ${data.count} items`);
+      return { success: true, lastCronRun: data.lastCronRun };
     } else {
       throw new Error(data.error || 'Unknown error');
     }
     
   } catch (error) {
-    console.error('❌ Error triggering news fetch:', error);
-    return false;
+    console.error('❌ Error triggering news scraping:', error);
+    return { success: false };
+  }
+}
+
+/**
+ * Scrape latest news and get fresh data
+ * This is a convenience function that combines scraping and loading
+ */
+export async function scrapeLatestNews(options: FetchNewsOptions = {}): Promise<{ success: boolean; lastCronRun?: string; news?: Item[] }> {
+  try {
+    console.log('🔄 Scraping latest news...');
+    
+    // First trigger the scraping
+    const scrapeResult = await triggerNewsScraping(options);
+    if (!scrapeResult.success) {
+      return { success: false };
+    }
+    
+    // Then load the newly scraped data
+    const newsData = await loadStoredNews(options);
+    const news = Array.isArray(newsData) ? newsData : newsData.news;
+    
+    return {
+      success: true,
+      lastCronRun: scrapeResult.lastCronRun,
+      news: news
+    };
+    
+  } catch (error) {
+    console.error('❌ Error scraping latest news:', error);
+    return { success: false };
   }
 }
 

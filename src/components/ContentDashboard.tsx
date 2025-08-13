@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { calculateRelevanceScore, getScoreboard } from '../utils/scoring';
-import { fetchLatestNews, type Item } from '../utils/newsFetcher';
+import { loadStoredNews, scrapeLatestNews, type Item } from '../utils/newsFetcher';
+import { loadFixtureData, getNewsFromFixture, getVideosFromFixture } from '../utils/fixtureLoader';
 import TextCard from './TextCard';
 import VideoCard from './VideoCard';
 
@@ -69,25 +70,27 @@ export default function ContentDashboard({
       console.log('🚀 Starting to fetch all data...');
       setLoading(true);
       try {
-        // Try to fetch from worker first, fallback to static JSON
+        // For initial page load, load fixture file once and extract both news and videos
+        console.log('📁 Initial page load: Loading from news fixture');
         let newsData: Item[] = [];
+        let videoData: Item[] = [];
+        let cronTimestamp: string | null = null;
+        
         try {
-          console.log('🔄 Fetching news from worker...');
-          newsData = await fetchLatestNews();
-          console.log(`✅ Worker returned ${newsData.length} news items`);
-        } catch (workerError) {
-          console.warn('⚠️ Worker unavailable, falling back to static JSON:', workerError);
-          // Fallback to static JSON
-          const newsResponse = await fetch('/sample_texts.json');
-          newsData = await newsResponse.json() || [];
+          // Load fixture data once using centralized loader
+          const allContent = await loadFixtureData();
+          
+          // Extract news and video items
+          newsData = getNewsFromFixture(allContent);
+          videoData = getVideosFromFixture(allContent);
+          
+          console.log(`✅ Loaded ${newsData.length} news and ${videoData.length} videos from fixture`);
+          
+        } catch (error) {
+          console.error('❌ Failed to load fixture:', error);
+          newsData = [];
+          videoData = [];
         }
-
-        // Fetch videos from news fixture file
-        console.log('🎥 Fetching videos from news fixture...');
-        const videoResponse = await fetch('/news_fixture.json');
-        const allContent = await videoResponse.json() || [];
-        const videoData = allContent.filter((item: any) => item.type === 'video');
-        console.log(`✅ Loaded ${videoData.length} videos from news fixture`);
 
         // Add type identifiers
         console.log('🏷️ Adding type identifiers...');
@@ -100,10 +103,9 @@ export default function ContentDashboard({
         setNewsItems(typedNews);
         setVideoItems(typedVideos);
         
-        // Set last fetch time if we got news from worker
-        if (newsData.length > 0) {
-          setLastFetchTime(new Date().toISOString());
-        }
+        // For initial load, don't set a timestamp - it will be set when user refreshes
+        // This ensures the timestamp only shows when the worker actually ran
+        console.log('📅 Initial load: No timestamp set (will be set on refresh)');
         
         console.log('✅ All data loaded successfully');
       } catch (error) {
@@ -225,11 +227,23 @@ export default function ContentDashboard({
     setRefreshing(true);
     try {
       console.log('🔄 Manually refreshing news from worker...');
-      const freshNews = await fetchLatestNews();
-      const typedNews = freshNews.map((item: Item): NewsItem => ({ ...item, type: 'news' }));
-      setNewsItems(typedNews);
-      setLastFetchTime(new Date().toISOString());
-      console.log(`✅ Refreshed ${freshNews.length} news items`);
+      
+      // Use the new scrapeLatestNews function that handles everything
+      const scrapeResult = await scrapeLatestNews();
+      
+      if (scrapeResult.success && scrapeResult.lastCronRun) {
+        console.log(`📅 New cron run timestamp: ${scrapeResult.lastCronRun}`);
+        setLastFetchTime(scrapeResult.lastCronRun);
+        
+        // Update news items if we got fresh data
+        if (scrapeResult.news) {
+          const typedNews = scrapeResult.news.map((item: Item): NewsItem => ({ ...item, type: 'news' }));
+          setNewsItems(typedNews);
+          console.log(`✅ Refreshed ${typedNews.length} news items`);
+        }
+      } else {
+        console.error('❌ Failed to scrape latest news');
+      }
     } catch (error) {
       console.error('❌ Failed to refresh news:', error);
     } finally {
@@ -247,8 +261,7 @@ export default function ContentDashboard({
               <h3 className="text-lg font-semibold text-blue-900">News Status</h3>
               <p className="text-blue-700 text-sm">
                 {newsItems.length} news items loaded
-                {lastFetchTime && ` • Last updated: ${new Date(lastFetchTime).toLocaleString()}`}
-
+                {lastFetchTime ? ` • Last cron run: ${new Date(lastFetchTime).toLocaleString()}` : ' • Click refresh to get latest news'}
               </p>
             </div>
             <button

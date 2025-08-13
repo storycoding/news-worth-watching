@@ -87,30 +87,49 @@ function extractSourceFromUrl(url: string): string {
   }
 }
 
-// Extract relevant tags from title and summary
-function extractTags(title: string, summary: string): string[] {
-  const text = `${title} ${summary}`.toLowerCase();
+// Extract Azores-related tags
+function extractAzoresTags(text: string): string[] {
   const tags: string[] = [];
-  
-  // Azores-related tags
   if (text.includes('açores') || text.includes('azores')) tags.push('azores');
   if (text.includes('são miguel') || text.includes('sao miguel')) tags.push('sao-miguel');
   if (text.includes('ponta delgada')) tags.push('ponta-delgada');
-  
-  // Permaculture and regeneration tags
+  return tags;
+}
+
+// Extract permaculture and regeneration tags
+function extractPermacultureTags(text: string): string[] {
+  const tags: string[] = [];
   if (text.includes('permaculture') || text.includes('permacultura')) tags.push('permaculture');
   if (text.includes('agroforestry') || text.includes('agrofloresta')) tags.push('agroforestry');
   if (text.includes('regeneration') || text.includes('regeneração')) tags.push('regeneration');
   if (text.includes('sustainability') || text.includes('sustentabilidade')) tags.push('sustainability');
   if (text.includes('climate') || text.includes('clima')) tags.push('climate');
   if (text.includes('environment') || text.includes('ambiente')) tags.push('environment');
-  
-  // Policy and research tags
+  return tags;
+}
+
+// Extract policy and research tags
+function extractPolicyTags(text: string): string[] {
+  const tags: string[] = [];
   if (text.includes('policy') || text.includes('política')) tags.push('policy');
   if (text.includes('research') || text.includes('investigação')) tags.push('research');
   if (text.includes('innovation') || text.includes('inovação')) tags.push('innovation');
-  
   return tags;
+}
+
+// Extract all relevant tags from title and summary
+function extractTags(title: string, summary: string): string[] {
+  const text = `${title} ${summary}`.toLowerCase();
+  
+  // Combine all tag categories
+  const allTags = [
+    ...extractAzoresTags(text),
+    ...extractPermacultureTags(text),
+    ...extractPolicyTags(text)
+  ];
+  
+  // Remove duplicates and return
+  return [...new Set(allTags)];
 }
 
 // Fetch news from a single source
@@ -134,47 +153,65 @@ async function fetchNewsFromSource(source: Source): Promise<NewsItem[]> {
   }
 }
 
+// Route to appropriate scraper based on source label
+function routeToScraper(source: Source): Promise<any[]> {
+  if (source.label.includes('Governo dos Açores')) {
+    return scrapeAzoresGovernment();
+  } else if (source.label.includes('Diário da República')) {
+    return scrapeDiarioRepublica();
+  } else if (source.label.includes('INOVA')) {
+    return scrapeInovaAzores();
+  } else if (source.label.includes('Azores Geopark')) {
+    return scrapeAzoresGeopark();
+  } else if (source.label.includes('Universidade dos Açores')) {
+    return scrapeUniversidadeAzores();
+  } else {
+    console.log(`No specific scraper for ${source.label}, using generic approach`);
+    return Promise.resolve([]);
+  }
+}
+
+// Convert scraped items to NewsItem format
+function convertScrapedToNews(scrapedItems: any[]): NewsItem[] {
+  return scrapedItems.map(item => ({
+    id: generateId(item.url),
+    title: item.title,
+    source: extractSourceFromUrl(item.url),
+    url: item.url,
+    publishedAt: item.publishedAt,
+    summary: item.summary,
+    tags: extractTags(item.title, item.summary)
+  }));
+}
+
 // Scrape specific websites using our dedicated scrapers
 async function scrapeWebsite(source: Source): Promise<NewsItem[]> {
   try {
-    let scrapedItems: any[] = [];
+    console.log(`🔍 Scraping website: ${source.label}`);
     
-    // Route to appropriate scraper based on source label
-    if (source.label.includes('Governo dos Açores')) {
-      scrapedItems = await scrapeAzoresGovernment();
-    } else if (source.label.includes('Diário da República')) {
-      scrapedItems = await scrapeDiarioRepublica();
-    } else if (source.label.includes('INOVA')) {
-      scrapedItems = await scrapeInovaAzores();
-    } else if (source.label.includes('Azores Geopark')) {
-      scrapedItems = await scrapeAzoresGeopark();
-    } else if (source.label.includes('Universidade dos Açores')) {
-      scrapedItems = await scrapeUniversidadeAzores();
-    } else {
-      console.log(`No specific scraper for ${source.label}, using generic approach`);
+    // Route to appropriate scraper
+    const scrapedItems = await routeToScraper(source);
+    
+    if (scrapedItems.length === 0) {
+      console.log(`⚠️ No items scraped from ${source.label}`);
       return [];
     }
     
     // Convert scraped items to NewsItem format
-    return scrapedItems.map(item => ({
-      id: generateId(item.url),
-      title: item.title,
-      source: extractSourceFromUrl(item.url),
-      url: item.url,
-      publishedAt: item.publishedAt,
-      summary: item.summary,
-      tags: extractTags(item.title, item.summary)
-    }));
+    const newsItems = convertScrapedToNews(scrapedItems);
+    console.log(`✅ Converted ${scrapedItems.length} scraped items to news format`);
+    
+    return newsItems;
     
   } catch (error) {
-    console.error(`Error scraping website ${source.label}:`, error);
+    console.error(`❌ Error scraping website ${source.label}:`, error);
     return [];
   }
 }
 
-// Main function to fetch all news
-async function fetchAllNews(): Promise<NewsItem[]> {
-  const sources: SourceCategory[] = [
+// Get the predefined news sources configuration
+function getNewsSources(): SourceCategory[] {
+  return [
     {
       name: "Azores · Policy & Regional",
       sources: [
@@ -198,20 +235,56 @@ async function fetchAllNews(): Promise<NewsItem[]> {
       ]
     }
   ];
+}
 
+// Fetch news from a single source with error handling
+async function fetchNewsFromSourceWithErrorHandling(source: Source): Promise<NewsItem[]> {
+  try {
+    console.log(`Fetching news from: ${source.label}`);
+    const news = await fetchNewsFromSource(source);
+    console.log(`✅ Successfully fetched ${news.length} items from ${source.label}`);
+    return news;
+  } catch (error) {
+    console.error(`❌ Error fetching from ${source.label}:`, error);
+    return []; // Return empty array on error, don't fail the entire process
+  }
+}
+
+// Add respectful delay between source requests
+async function addFetchDelay(ms: number = 1000): Promise<void> {
+  await new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Fetch news from a single category
+async function fetchNewsFromCategory(category: SourceCategory): Promise<NewsItem[]> {
+  const categoryNews: NewsItem[] = [];
+  
+  for (const source of category.sources) {
+    const news = await fetchNewsFromSourceWithErrorHandling(source);
+    categoryNews.push(...news);
+    
+    // Add delay between sources in the same category
+    await addFetchDelay(1000);
+  }
+  
+  console.log(`📰 Category "${category.name}": ${categoryNews.length} total items`);
+  return categoryNews;
+}
+
+// Main function to fetch all news
+async function fetchAllNews(): Promise<NewsItem[]> {
+  const sources = getNewsSources();
   const allNews: NewsItem[] = [];
   
   for (const category of sources) {
-    for (const source of category.sources) {
-      console.log(`Fetching news from: ${source.label}`);
-      const news = await fetchNewsFromSource(source);
-      allNews.push(...news);
-      
-      // Add a small delay to be respectful to sources
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    const categoryNews = await fetchNewsFromCategory(category);
+    allNews.push(...categoryNews);
+    
+    // Add delay between categories
+    await addFetchDelay(500);
   }
   
+  console.log(`🎯 Total news fetched: ${allNews.length} items`);
   return allNews;
 }
 
@@ -229,6 +302,76 @@ function mergeNewsItems(existingNews: NewsItem[], newNews: NewsItem[]): NewsItem
   return mergedNews.slice(0, 100);
 }
 
+// Log news items for debugging
+function logNewsItems(news: NewsItem[]): void {
+  console.log('📰 News items fetched:');
+  news.forEach((item, index) => {
+    console.log(`${index + 1}. ${item.title} (${item.source})`);
+    console.log(`   URL: ${item.url}`);
+    console.log(`   Tags: ${item.tags?.join(', ') || 'none'}`);
+    console.log(`   Published: ${item.publishedAt}`);
+    console.log('---');
+  });
+}
+
+// Get existing news from KV storage
+async function getExistingNewsFromKV(env: any): Promise<NewsItem[]> {
+  try {
+    const storedNews = await env.NEWS_KV.get('latest-news');
+    if (storedNews) {
+      const existingNews = JSON.parse(storedNews);
+      console.log(`📖 Found ${existingNews.length} existing news items`);
+      return existingNews;
+    }
+  } catch (error) {
+    console.log('No existing news found, starting fresh');
+  }
+  return [];
+}
+
+// Store merged news in KV storage
+async function storeMergedNewsInKV(mergedNews: NewsItem[], env: any): Promise<void> {
+  // Store the merged news
+  await env.NEWS_KV.put('latest-news', JSON.stringify(mergedNews), { 
+    expirationTtl: 86400 * 7 // 7 days expiration
+  });
+  
+  // Store individual news items for easier access
+  for (const item of mergedNews) {
+    await env.NEWS_KV.put(`news-${item.id}`, JSON.stringify(item), {
+      expirationTtl: 86400 * 30 // 30 days for individual items
+    });
+  }
+  
+  console.log(`💾 Stored ${mergedNews.length} items in KV storage`);
+}
+
+// Update fetch metadata in KV storage
+async function updateFetchMetadata(mergedNews: NewsItem[], newItemsCount: number, env: any): Promise<void> {
+  const metadata = {
+    lastFetch: new Date().toISOString(),
+    lastCronRun: new Date().toISOString(), // Track when cron actually ran
+    totalItems: mergedNews.length,
+    newItemsAdded: newItemsCount,
+    sources: [...new Set(mergedNews.map(item => item.source))]
+  };
+  
+  await env.NEWS_KV.put('fetch-metadata', JSON.stringify(metadata), {
+    expirationTtl: 86400 * 30 // 30 days
+  });
+  
+  console.log('📊 Fetch metadata updated');
+}
+
+// Log storage summary
+function logStorageSummary(mergedNews: NewsItem[], newItemsCount: number): void {
+  console.log('✅ News successfully stored in KV storage');
+  console.log(`   - Total news: ${mergedNews.length} items`);
+  console.log(`   - New items: ${newItemsCount} added`);
+  console.log(`   - Individual items: ${mergedNews.length} stored`);
+  console.log(`   - Metadata updated`);
+}
+
 // Store news data in Cloudflare KV for persistent storage
 async function storeNewsData(news: NewsItem[], env: any): Promise<void> {
   try {
@@ -240,29 +383,13 @@ async function storeNewsData(news: NewsItem[], env: any): Promise<void> {
     }
     
     // Log the news items for debugging
-    console.log('📰 News items fetched:');
-    news.forEach((item, index) => {
-      console.log(`${index + 1}. ${item.title} (${item.source})`);
-      console.log(`   URL: ${item.url}`);
-      console.log(`   Tags: ${item.tags?.join(', ') || 'none'}`);
-      console.log(`   Published: ${item.publishedAt}`);
-      console.log('---');
-    });
+    logNewsItems(news);
     
     // Store in Cloudflare KV for persistent storage
     if (env.NEWS_KV) {
       try {
         // Get existing news to merge with new items
-        let existingNews: NewsItem[] = [];
-        try {
-          const storedNews = await env.NEWS_KV.get('latest-news');
-          if (storedNews) {
-            existingNews = JSON.parse(storedNews);
-            console.log(`📖 Found ${existingNews.length} existing news items`);
-          }
-        } catch (error) {
-          console.log('No existing news found, starting fresh');
-        }
+        const existingNews = await getExistingNewsFromKV(env);
         
         // Merge new news with existing news
         const mergedNews = mergeNewsItems(existingNews, news);
@@ -271,32 +398,13 @@ async function storeNewsData(news: NewsItem[], env: any): Promise<void> {
         console.log(`🔄 Merged news: ${newItemsCount} new items added`);
         
         // Store the merged news
-        await env.NEWS_KV.put('latest-news', JSON.stringify(mergedNews), { 
-          expirationTtl: 86400 * 7 // 7 days expiration
-        });
+        await storeMergedNewsInKV(mergedNews, env);
         
-        // Store individual news items for easier access
-        for (const item of mergedNews) {
-          await env.NEWS_KV.put(`news-${item.id}`, JSON.stringify(item), {
-            expirationTtl: 86400 * 30 // 30 days for individual items
-          });
-        }
+        // Update fetch metadata
+        await updateFetchMetadata(mergedNews, newItemsCount, env);
         
-        // Store metadata about the fetch
-        await env.NEWS_KV.put('fetch-metadata', JSON.stringify({
-          lastFetch: new Date().toISOString(),
-          totalItems: mergedNews.length,
-          newItemsAdded: newItemsCount,
-          sources: [...new Set(mergedNews.map(item => item.source))]
-        }), {
-          expirationTtl: 86400 * 30 // 30 days
-        });
-        
-        console.log('✅ News successfully stored in KV storage');
-        console.log(`   - Total news: ${mergedNews.length} items`);
-        console.log(`   - New items: ${newItemsCount} added`);
-        console.log(`   - Individual items: ${mergedNews.length} stored`);
-        console.log(`   - Metadata updated`);
+        // Log storage summary
+        logStorageSummary(mergedNews, newItemsCount);
         
       } catch (kvError) {
         console.error('❌ Error storing in KV:', kvError);
@@ -317,8 +425,15 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     
+    // Log every request for debugging
+    console.log(`🚀 [${new Date().toISOString()}] ${request.method} ${path}`);
+    console.log(`   Headers:`, Object.fromEntries(request.headers.entries()));
+    console.log(`   Origin: ${request.headers.get('origin') || 'none'}`);
+    console.log(`   User-Agent: ${request.headers.get('user-agent') || 'none'}`);
+    
     // Handle manual triggers via HTTP requests
-    if (request.method === 'POST' && path === '/') {
+    if (request.method === 'POST' && path === '/news-scraper') {
+      console.log('🔄 Manual news scraping triggered via API');
       try {
         const news = await fetchAllNews();
         await storeNewsData(news, env);
@@ -327,7 +442,7 @@ export default {
           success: true,
           message: `Fetched ${news.length} news items`,
           count: news.length,
-          news: news // Include the actual news data
+          lastCronRun: new Date().toISOString() // This becomes the new cron run time
         }), {
           headers: { 
             'Content-Type': 'application/json',
@@ -371,10 +486,10 @@ export default {
         return new Response(JSON.stringify({
           message: 'News Fetcher Worker is running',
           endpoints: {
-            'POST /': 'Trigger news fetch manually',
+            'POST /news-scraper': 'Trigger news scraping manually (updates lastCronRun)',
             'GET /': 'This info message',
-            'GET /news': 'Get latest fetched news from KV storage',
-            'GET /metadata': 'Get fetch metadata and statistics',
+            'GET /news-loader': 'Get stored news from KV (no processing)',
+            'GET /news-status': 'Get system status and metadata',
             'GET /health': 'Health check'
           }
         }), {
@@ -387,13 +502,15 @@ export default {
         });
       }
       
-      if (path === '/news') {
-        // Return the latest news from KV storage
+      if (path === '/news-loader') {
+        // Simple storage API - just return stored data, no processing
         try {
-          let news: NewsItem[] = [];
-          let fetchedAt = new Date().toISOString();
+          console.log('📖 News Loader: Serving stored news data');
           
-          // Try to get news from KV storage first
+          let news: NewsItem[] = [];
+          let metadata = null;
+          
+          // Get stored data from KV
           if (env.NEWS_KV) {
             try {
               const storedNews = await env.NEWS_KV.get('latest-news');
@@ -402,43 +519,28 @@ export default {
                 console.log(`📖 Retrieved ${news.length} news items from KV storage`);
               }
               
-              // Get fetch metadata
-              const metadata = await env.NEWS_KV.get('fetch-metadata');
-              if (metadata) {
-                const meta = JSON.parse(metadata);
-                fetchedAt = meta.lastFetch;
-              }
+              // Get fetch metadata for timestamp
+              metadata = await env.NEWS_KV.get('fetch-metadata');
             } catch (kvError) {
               console.error('Error reading from KV:', kvError);
             }
           }
           
-          // If no stored news, fetch fresh data
-          if (news.length === 0) {
-            console.log('No stored news found, fetching fresh data...');
-            news = await fetchAllNews();
-            fetchedAt = new Date().toISOString();
-            
-            // Store the fresh data
-            if (news.length > 0) {
-              await storeNewsData(news, env);
+          // Return stored data only - no fetching, no processing
+          return new Response(JSON.stringify({
+            success: true,
+            count: news.length,
+            news: news,
+            lastCronRun: metadata ? JSON.parse(metadata).lastCronRun : null,
+            source: 'kv-storage-only'
+          }), {
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type'
             }
-          }
-          
-                  return new Response(JSON.stringify({
-          success: true,
-          count: news.length,
-          news: news,
-          fetchedAt: fetchedAt,
-          source: 'kv-storage'
-        }), {
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type'
-          }
-        });
+          });
         } catch (error) {
           return new Response(JSON.stringify({
             success: false,
@@ -466,8 +568,8 @@ export default {
         });
       }
       
-      if (path === '/metadata') {
-        // Get fetch metadata
+      if (path === '/news-status') {
+        // Get fetch metadata and system status
         try {
           let metadata = null;
           if (env.NEWS_KV) {
@@ -477,19 +579,20 @@ export default {
             }
           }
           
-                  return new Response(JSON.stringify({
-          success: true,
-          metadata: metadata || {
-            lastFetch: null,
-            totalItems: 0,
-            sources: []
-          }
-        }), {
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type'
+          return new Response(JSON.stringify({
+            success: true,
+            metadata: metadata || {
+              lastFetch: null,
+              lastCronRun: null,
+              totalItems: 0,
+              sources: []
+            }
+          }), {
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type'
           }
         });
         } catch (error) {
@@ -509,14 +612,16 @@ export default {
   
   // Cron trigger handler
   async scheduled(event: any, env: any, ctx: any): Promise<void> {
-    console.log('Cron trigger activated - fetching news...');
+    console.log(`⏰ [${new Date().toISOString()}] Cron trigger activated - fetching news...`);
+    console.log(`   Event type: ${event.type}`);
+    console.log(`   Event cron: ${event.cron || 'unknown'}`);
     
     try {
       const news = await fetchAllNews();
       await storeNewsData(news, env);
-      console.log('✅ News fetch completed successfully');
+      console.log(`✅ [${new Date().toISOString()}] News fetch completed successfully`);
     } catch (error) {
-      console.error('❌ Error in scheduled news fetch:', error);
+      console.error(`❌ [${new Date().toISOString()}] Error in scheduled news fetch:`, error);
     }
   }
 };

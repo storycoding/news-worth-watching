@@ -69,39 +69,63 @@ function parseNewsFromHTML(html: string, selectors: {
 // Scraper for Governo dos Açores
 export async function scrapeAzoresGovernment(): Promise<ScrapedNewsItem[]> {
   try {
+    // For testing purposes, return mock data to verify KV storage works
+    console.log('🔍 Testing Azores Government scraper...');
+    
+    // Try to fetch the actual website
     const response = await fetch('https://www.azores.gov.pt/pt');
     const html = await response.text();
     
-    // This is a simplified selector - you'll need to adjust based on actual HTML structure
-    return parseNewsFromHTML(html, {
-      container: '<div class="news-item">([\\s\\S]*?)</div>',
-      title: '<h3[^>]*>([^<]+)</h3>',
-      link: '<a[^>]*href="([^"]*)"[^>]*>',
-      date: '<time[^>]*>([^<]+)</time>',
-      summary: '<p[^>]*>([^<]+)</p>'
-    });
+    // For now, return mock data to test the system
+    // TODO: Implement proper HTML parsing based on actual site structure
+    return [
+      {
+        title: "Test News from Azores Government",
+        url: "https://www.azores.gov.pt/pt/test-news",
+        publishedAt: new Date().toISOString(),
+        summary: "This is a test news item to verify the cron job and KV storage are working properly."
+      }
+    ];
   } catch (error) {
     console.error('Error scraping Azores Government:', error);
-    return [];
+    // Return test data even if scraping fails
+    return [
+      {
+        title: "Test News from Azores Government (Fallback)",
+        url: "https://www.azores.gov.pt/pt/test-news-fallback",
+        publishedAt: new Date().toISOString(),
+        summary: "This is a fallback test news item to verify the system works."
+      }
+    ];
   }
 }
 
 // Scraper for Diário da República
 export async function scrapeDiarioRepublica(): Promise<ScrapedNewsItem[]> {
   try {
+    console.log('🔍 Testing Diário da República scraper...');
     const response = await fetch('https://dre.pt/web/guest/home');
     const html = await response.text();
     
-    return parseNewsFromHTML(html, {
-      container: '<div class="dre-item">([\\s\\S]*?)</div>',
-      title: '<h4[^>]*>([^<]+)</h4>',
-      link: '<a[^>]*href="([^"]*)"[^>]*>',
-      date: '<span class="date">([^<]+)</span>',
-      summary: '<div class="summary">([^<]+)</div>'
-    });
+    // For now, return mock data to test the system
+    return [
+      {
+        title: "Test News from Diário da República",
+        url: "https://dre.pt/web/guest/home/test-news",
+        publishedAt: new Date().toISOString(),
+        summary: "This is a test news item to verify the cron job and KV storage are working properly."
+      }
+    ];
   } catch (error) {
     console.error('Error scraping Diário da República:', error);
-    return [];
+    return [
+      {
+        title: "Test News from Diário da República (Fallback)",
+        url: "https://dre.pt/web/guest/home/test-news-fallback",
+        publishedAt: new Date().toISOString(),
+        summary: "This is a fallback test news item to verify the system works."
+      }
+    ];
   }
 }
 
