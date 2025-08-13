@@ -69,7 +69,7 @@ export async function loadStoredNews(options: FetchNewsOptions = {}): Promise<Ne
     }
     
     console.log(`✅ Loaded ${data.count} stored news items from worker`);
-    return data.news;
+    return data; // Return the full response to preserve lastCronRun
     
   } catch (error) {
     console.error('❌ Error loading stored news from worker:', error);

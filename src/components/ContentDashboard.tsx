@@ -70,25 +70,56 @@ export default function ContentDashboard({
       console.log('🚀 Starting to fetch all data...');
       setLoading(true);
       try {
-        // For initial page load, load fixture file once and extract both news and videos
-        console.log('📁 Initial page load: Loading from news fixture');
         let newsData: Item[] = [];
         let videoData: Item[] = [];
         let cronTimestamp: string | null = null;
         
+        // First, try to get the timestamp from the worker
         try {
-          // Load fixture data once using centralized loader
-          const allContent = await loadFixtureData();
+          console.log('🌐 Trying to get timestamp from worker...');
+          const workerResponse = await loadStoredNews();
           
-          // Extract news and video items
-          newsData = getNewsFromFixture(allContent);
-          videoData = getVideosFromFixture(allContent);
-          
-          console.log(`✅ Loaded ${newsData.length} news and ${videoData.length} videos from fixture`);
-          
+          // Check if we got a NewsResponse with timestamp
+          if (typeof workerResponse === 'object' && 'success' in workerResponse && workerResponse.success) {
+            if (workerResponse.lastCronRun) {
+              cronTimestamp = workerResponse.lastCronRun;
+              console.log(`📅 Got timestamp from worker: ${cronTimestamp}`);
+            }
+            
+            // If worker has news data, use it
+            if (workerResponse.news && workerResponse.news.length > 0) {
+              newsData = workerResponse.news;
+              console.log(`✅ Got ${newsData.length} news items from worker`);
+            }
+          } else if (Array.isArray(workerResponse)) {
+            // We got an array of items (fallback case)
+            console.log(`📁 Got ${workerResponse.length} items from worker fallback`);
+            newsData = workerResponse;
+          }
         } catch (error) {
-          console.error('❌ Failed to load fixture:', error);
-          newsData = [];
+          console.log('⚠️ Worker unavailable, will use fixture data');
+        }
+        
+        // If no worker data, fall back to fixture
+        if (newsData.length === 0) {
+          try {
+            console.log('📁 Loading from news fixture...');
+            const allContent = await loadFixtureData();
+            newsData = getNewsFromFixture(allContent);
+            console.log(`✅ Loaded ${newsData.length} news items from fixture`);
+          } catch (error) {
+            console.error('❌ Failed to load fixture:', error);
+            newsData = [];
+          }
+        }
+        
+        // Always load videos from fixture for now
+        try {
+          const allContent = await loadFixtureData();
+          videoData = getVideosFromFixture(allContent);
+          console.log(`✅ Loaded ${videoData.length} videos from fixture`);
+        } catch (error) {
+          console.error('❌ Failed to load videos:', error);
           videoData = [];
         }
 
@@ -103,9 +134,13 @@ export default function ContentDashboard({
         setNewsItems(typedNews);
         setVideoItems(typedVideos);
         
-        // For initial load, don't set a timestamp - it will be set when user refreshes
-        // This ensures the timestamp only shows when the worker actually ran
-        console.log('📅 Initial load: No timestamp set (will be set on refresh)');
+        // Set the timestamp if we got one from the worker
+        if (cronTimestamp) {
+          setLastFetchTime(cronTimestamp);
+          console.log(`📅 Set initial timestamp: ${cronTimestamp}`);
+        } else {
+          console.log('📅 No timestamp available (worker may not have run yet)');
+        }
         
         console.log('✅ All data loaded successfully');
       } catch (error) {
