@@ -372,6 +372,158 @@ function logStorageSummary(mergedNews: NewsItem[], newItemsCount: number): void 
   console.log(`   - Metadata updated`);
 }
 
+// Test individual scraper for development
+async function testIndividualScraper(scraperName: string, sourceUrl?: string): Promise<any> {
+  console.log(`🧪 Testing scraper: ${scraperName}`);
+  
+  try {
+    let scrapedItems: any[] = [];
+    
+    // Route to appropriate scraper
+    switch (scraperName.toLowerCase()) {
+      case 'azores-government':
+        scrapedItems = await scrapeAzoresGovernment();
+        break;
+      case 'diario-republica':
+        scrapedItems = await scrapeDiarioRepublica();
+        break;
+      case 'inova-azores':
+        scrapedItems = await scrapeInovaAzores();
+        break;
+      case 'azores-geopark':
+        scrapedItems = await scrapeAzoresGeopark();
+        break;
+      case 'universidade-azores':
+        scrapedItems = await scrapeUniversidadeAzores();
+        break;
+      default:
+        throw new Error(`Unknown scraper: ${scraperName}`);
+    }
+    
+    // Convert to news format for testing
+    const newsItems = convertScrapedToNews(scrapedItems);
+    
+    return {
+      scraperName,
+      sourceUrl: sourceUrl || 'default',
+      rawScrapedItems: scrapedItems,
+      convertedNewsItems: newsItems,
+      itemCount: scrapedItems.length,
+      success: true,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error(`❌ Error testing scraper ${scraperName}:`, error);
+    return {
+      scraperName,
+      sourceUrl: sourceUrl || 'default',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      success: false,
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+// Test scraping with detailed logging for development
+async function testScrapingWithLogging(enableVerboseLogging: boolean = true, testSpecificSources: string[] = []): Promise<any> {
+  console.log('🧪 Testing scraping with detailed logging...');
+  
+  const startTime = Date.now();
+  const results: any = {
+    startTime: new Date(startTime).toISOString(),
+    enableVerboseLogging,
+    testSpecificSources,
+    sources: [],
+    summary: {
+      totalSources: 0,
+      successfulSources: 0,
+      failedSources: 0,
+      totalItems: 0
+    }
+  };
+  
+  try {
+    const sources = getNewsSources();
+    const sourcesToTest = testSpecificSources.length > 0 
+      ? sources.filter(cat => testSpecificSources.includes(cat.name))
+      : sources;
+    
+    results.summary.totalSources = sourcesToTest.reduce((acc, cat) => acc + cat.sources.length, 0);
+    
+    for (const category of sourcesToTest) {
+      console.log(`\n📰 Testing category: ${category.name}`);
+      
+      const categoryResults: {
+        categoryName: string;
+        sources: Array<{
+          label: string;
+          url: string;
+          type: 'rss' | 'api' | 'scrape';
+          duration: number;
+          itemCount: number;
+          success: boolean;
+          items: NewsItem[] | undefined;
+        }>;
+      } = {
+        categoryName: category.name,
+        sources: []
+      };
+      
+      for (const source of category.sources) {
+        console.log(`  🔍 Testing source: ${source.label}`);
+        
+        const sourceStartTime = Date.now();
+        const sourceResult = await fetchNewsFromSourceWithErrorHandling(source);
+        const sourceDuration = Date.now() - sourceStartTime;
+        
+        const sourceInfo = {
+          label: source.label,
+          url: source.url,
+          type: source.type,
+          duration: sourceDuration,
+          itemCount: sourceResult.length,
+          success: sourceResult.length >= 0,
+          items: enableVerboseLogging ? sourceResult : undefined
+        };
+        
+        categoryResults.sources.push(sourceInfo);
+        
+        if (sourceResult.length > 0) {
+          results.summary.successfulSources++;
+          results.summary.totalItems += sourceResult.length;
+        } else {
+          results.summary.failedSources++;
+        }
+        
+        // Add delay between sources
+        await addFetchDelay(500);
+      }
+      
+      results.sources.push(categoryResults);
+    }
+    
+    const totalDuration = Date.now() - startTime;
+    results.endTime = new Date().toISOString();
+    results.totalDuration = totalDuration;
+    results.summary.totalDuration = totalDuration;
+    
+    console.log(`\n🎯 Scraping test completed in ${totalDuration}ms`);
+    console.log(`   - Total sources: ${results.summary.totalSources}`);
+    console.log(`   - Successful: ${results.summary.successfulSources}`);
+    console.log(`   - Failed: ${results.summary.failedSources}`);
+    console.log(`   - Total items: ${results.summary.totalItems}`);
+    
+    return results;
+    
+  } catch (error) {
+    console.error('❌ Error in scraping test:', error);
+    results.error = error instanceof Error ? error.message : 'Unknown error';
+    results.success = false;
+    return results;
+  }
+}
+
 // Store news data in Cloudflare KV for persistent storage
 async function storeNewsData(news: NewsItem[], env: any): Promise<void> {
   try {
@@ -467,6 +619,94 @@ export default {
       }
     }
     
+    // Test individual scraper endpoints for development
+    if (request.method === 'POST' && path === '/test-scraper') {
+      console.log('🧪 Testing individual scraper...');
+      try {
+        const body = await request.json() as { scraperName?: string; sourceUrl?: string };
+        const { scraperName, sourceUrl } = body;
+        
+        if (!scraperName) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'scraperName is required'
+          }), {
+            status: 400,
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type'
+            }
+          });
+        }
+        
+        const testResult = await testIndividualScraper(scraperName, sourceUrl);
+        
+        return new Response(JSON.stringify({
+          success: true,
+          scraperName,
+          result: testResult
+        }), {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          }
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }), {
+          status: 500,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          }
+        });
+      }
+    }
+    
+    // Test scraping with detailed logging
+    if (request.method === 'POST' && path === '/test-scraping') {
+      console.log('🧪 Testing scraping with detailed logging...');
+      try {
+        const body = await request.json() as { enableVerboseLogging?: boolean; testSpecificSources?: string[] };
+        const { enableVerboseLogging = true, testSpecificSources = [] } = body;
+        
+        const testResult = await testScrapingWithLogging(enableVerboseLogging, testSpecificSources);
+        
+        return new Response(JSON.stringify({
+          success: true,
+          testResult
+        }), {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          }
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }), {
+          status: 500,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          }
+        });
+      }
+    }
+    
     // Handle OPTIONS requests for CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, {
@@ -487,6 +727,8 @@ export default {
           message: 'News Fetcher Worker is running',
           endpoints: {
             'POST /news-scraper': 'Trigger news scraping manually (updates lastCronRun)',
+            'POST /test-scraper': 'Test individual scraper (development)',
+            'POST /test-scraping': 'Test scraping with detailed logging (development)',
             'GET /': 'This info message',
             'GET /news-loader': 'Get stored news from KV (no processing)',
             'GET /news-status': 'Get system status and metadata',

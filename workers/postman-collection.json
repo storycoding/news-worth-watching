@@ -1,0 +1,184 @@
+{
+  "info": {
+    "name": "News Worker Testing",
+    "description": "Complete testing suite for the Cloudflare Worker news scraper",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8787",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Worker Info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": ["{{base_url}}"],
+          "path": [""]
+        },
+        "description": "Get worker status and available endpoints"
+      },
+      "response": []
+    },
+    {
+      "name": "Test Individual Scraper",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"scraperName\": \"azores-government\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/test-scraper",
+          "host": ["{{base_url}}"],
+          "path": ["test-scraper"]
+        },
+        "description": "Test individual scrapers. Available names: azores-government, diario-republica, inova-azores, azores-geopark, universidade-azores"
+      },
+      "response": []
+    },
+    {
+      "name": "Test Comprehensive Scraping",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"enableVerboseLogging\": true,\n  \"testSpecificSources\": []\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/test-scraping",
+          "host": ["{{base_url}}"],
+          "path": ["test-scraping"]
+        },
+        "description": "Test comprehensive scraping with detailed logging. Use testSpecificSources array to test specific categories."
+      },
+      "response": []
+    },
+    {
+      "name": "Test Specific Category",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"enableVerboseLogging\": true,\n  \"testSpecificSources\": [\"Azores · Policy & Regional\"]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/test-scraping",
+          "host": ["{{base_url}}"],
+          "path": ["test-scraping"]
+        },
+        "description": "Test scraping for a specific category. Available categories: Azores · Policy & Regional, São Miguel · Environment & Research, Permaculture & Regeneration"
+      },
+      "response": []
+    },
+    {
+      "name": "Manual News Fetch",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/news-scraper",
+          "host": ["{{base_url}}"],
+          "path": ["news-scraper"]
+        },
+        "description": "Manually trigger the cron job to fetch and store news"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Stored News",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/news-loader",
+          "host": ["{{base_url}}"],
+          "path": ["news-loader"]
+        },
+        "description": "Retrieve stored news from KV storage"
+      },
+      "response": []
+    },
+    {
+      "name": "Get System Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/news-status",
+          "host": ["{{base_url}}"],
+          "path": ["news-status"]
+        },
+        "description": "Get system metadata and status"
+      },
+      "response": []
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Basic health check endpoint"
+      },
+      "response": []
+    }
+  ]
+}
