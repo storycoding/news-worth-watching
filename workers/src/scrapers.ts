@@ -69,30 +69,67 @@ function parseNewsFromHTML(html: string, selectors: {
 // Scraper for Governo dos Açores
 export async function scrapeAzoresGovernment(): Promise<ScrapedNewsItem[]> {
   try {
-    // For testing purposes, return mock data to verify KV storage works
-    console.log('🔍 Testing Azores Government scraper...');
+    console.log('🔍 Scraping Azores Government portal...');
     
-    // Try to fetch the actual website
-    const response = await fetch('https://www.azores.gov.pt/pt');
+    // Fetch the actual website (updated URL)
+    const response = await fetch('https://portal.azores.gov.pt');
     const html = await response.text();
     
-    // For now, return mock data to test the system
-    // TODO: Implement proper HTML parsing based on actual site structure
-    return [
-      {
-        title: "Test News from Azores Government",
-        url: "https://www.azores.gov.pt/pt/test-news",
-        publishedAt: new Date().toISOString(),
-        summary: "This is a test news item to verify the cron job and KV storage are working properly."
+    // Parse news items using the real HTML structure
+    const newsItems: ScrapedNewsItem[] = [];
+    
+    // Extract news items from the carousel
+    const carouselRegex = /<a[^>]*href="([^"]*news-detail[^"]*)"[^>]*class="carousel-item[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
+    let match;
+    
+    while ((match = carouselRegex.exec(html)) !== null && newsItems.length < 10) {
+      try {
+        const url = match[1];
+        const content = match[2];
+        
+        // Extract title
+        const titleMatch = content.match(/<span class="gacs-portlet-highlights--title-span">([^<]+)<\/span>/);
+        if (!titleMatch) continue;
+        
+        const title = titleMatch[1].trim();
+        
+        // Extract entity/department
+        const entityMatch = content.match(/<span class="gacs-portlet-highlights--entity-span"[^>]*>([^<]+)<\/span>/);
+        const entity = entityMatch ? entityMatch[1].trim() : 'Governo dos Açores';
+        
+        // Extract image alt text as summary (if available)
+        const imageMatch = content.match(/<img[^>]*alt="([^"]*)"[^>]*>/);
+        const summary = imageMatch && imageMatch[1] !== 'Artigo sem Imagem' 
+          ? imageMatch[1].trim() 
+          : `${title} - ${entity}`;
+        
+        // Normalize URL
+        const fullUrl = url.startsWith('http') ? url : `https://portal.azores.gov.pt${url}`;
+        
+        newsItems.push({
+          title,
+          url: fullUrl,
+          publishedAt: new Date().toISOString(), // We'll need to extract real dates later
+          summary
+        });
+        
+      } catch (error) {
+        console.error('Error parsing news item:', error);
+        continue;
       }
-    ];
+    }
+    
+    console.log(`✅ Scraped ${newsItems.length} news items from Azores Government`);
+    return newsItems;
+    
   } catch (error) {
     console.error('Error scraping Azores Government:', error);
-    // Return test data even if scraping fails
+    
+    // Return fallback data if scraping fails
     return [
       {
         title: "Test News from Azores Government (Fallback)",
-        url: "https://www.azores.gov.pt/pt/test-news-fallback",
+        url: "https://portal.azores.gov.pt/test-news-fallback",
         publishedAt: new Date().toISOString(),
         summary: "This is a fallback test news item to verify the system works."
       }
@@ -151,16 +188,47 @@ export async function scrapeInovaAzores(): Promise<ScrapedNewsItem[]> {
 // Scraper for Azores Geopark
 export async function scrapeAzoresGeopark(): Promise<ScrapedNewsItem[]> {
   try {
-    const response = await fetch('https://azoresgeopark.com');
+    console.log('🔍 Scraping Azores Geopark...');
+    
+    // Use the correct URL with www
+    const response = await fetch('https://www.azoresgeopark.com/');
     const html = await response.text();
     
-    return parseNewsFromHTML(html, {
-      container: '<div class="news-post">([\\s\\S]*?)</div>',
-      title: '<h3[^>]*>([^<]+)</h3>',
-      link: '<a[^>]*href="([^"]*)"[^>]*>',
-      date: '<span class="post-date">([^<]+)</span>',
-      summary: '<div class="post-excerpt">([^<]+)</div>'
-    });
+    const newsItems: ScrapedNewsItem[] = [];
+    
+    // Extract news items using the real HTML structure
+    const newsRegex = /<a href="([^"]*noticia\.php[^"]*)" class="link_noticias_home">([^<]+)<\/a>/g;
+    let match;
+    
+    while ((match = newsRegex.exec(html)) !== null && newsItems.length < 10) {
+      try {
+        const url = match[1];
+        const title = match[2].trim();
+        
+        // Normalize URL
+        const fullUrl = url.startsWith('http') ? url : `https://www.azoresgeopark.com${url}`;
+        
+        // Try to extract image alt text for summary
+        const imageRegex = new RegExp(`<img[^>]*src="[^"]*"[^>]*alt="([^"]*)"[^>]*>.*?<a href="${url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 's');
+        const imageMatch = html.match(imageRegex);
+        const summary = imageMatch && imageMatch[1] ? imageMatch[1].trim() : title;
+        
+        newsItems.push({
+          title,
+          url: fullUrl,
+          publishedAt: new Date().toISOString(), // We'll extract real dates later
+          summary
+        });
+        
+      } catch (error) {
+        console.error('Error parsing news item:', error);
+        continue;
+      }
+    }
+    
+    console.log(`✅ Scraped ${newsItems.length} news items from Azores Geopark`);
+    return newsItems;
+    
   } catch (error) {
     console.error('Error scraping Azores Geopark:', error);
     return [];
@@ -170,16 +238,66 @@ export async function scrapeAzoresGeopark(): Promise<ScrapedNewsItem[]> {
 // Scraper for Universidade dos Açores
 export async function scrapeUniversidadeAzores(): Promise<ScrapedNewsItem[]> {
   try {
-    const response = await fetch('https://www.uac.pt');
-    const html = await response.text();
+    console.log('🔍 Scraping Universidade dos Açores RSS feed...');
     
-    return parseNewsFromHTML(html, {
-      container: '<div class="news-item">([\\s\\S]*?)</div>',
-      title: '<h4[^>]*>([^<]+)</h4>',
-      link: '<a[^>]*href="([^"]*)"[^>]*>',
-      date: '<time[^>]*>([^<]+)</time>',
-      summary: '<p[^>]*>([^<]+)</p>'
-    });
+    // Use the dedicated news RSS feed
+    const response = await fetch('https://noticias.uac.pt/feed/');
+    const xml = await response.text();
+    
+    const newsItems: ScrapedNewsItem[] = [];
+    
+    // Parse RSS XML to extract news items
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    
+    while ((match = itemRegex.exec(xml)) !== null && newsItems.length < 10) {
+      try {
+        const itemContent = match[1];
+        
+        // Extract title
+        const titleMatch = itemContent.match(/<title>([^<]+)<\/title>/);
+        if (!titleMatch) continue;
+        const title = titleMatch[1].trim();
+        
+        // Extract link
+        const linkMatch = itemContent.match(/<link>([^<]+)<\/link>/);
+        if (!linkMatch) continue;
+        const url = linkMatch[1].trim();
+        
+        // Extract publication date
+        const dateMatch = itemContent.match(/<pubDate>([^<]+)<\/pubDate>/);
+        let publishedAt = new Date().toISOString();
+        if (dateMatch) {
+          try {
+            publishedAt = new Date(dateMatch[1].trim()).toISOString();
+          } catch (dateError) {
+            console.log('Could not parse date, using current time');
+          }
+        }
+        
+        // Extract creator/author
+        const creatorMatch = itemContent.match(/<dc:creator><!\[CDATA\[([^\]]+)\]><\/dc:creator>/);
+        const creator = creatorMatch ? creatorMatch[1].trim() : 'Universidade dos Açores';
+        
+        // Create summary from title and creator
+        const summary = `${title} - ${creator}`;
+        
+        newsItems.push({
+          title,
+          url,
+          publishedAt,
+          summary
+        });
+        
+      } catch (error) {
+        console.error('Error parsing RSS item:', error);
+        continue;
+      }
+    }
+    
+    console.log(`✅ Scraped ${newsItems.length} news items from Universidade dos Açores RSS feed`);
+    return newsItems;
+    
   } catch (error) {
     console.error('Error scraping Universidade dos Açores:', error);
     return [];

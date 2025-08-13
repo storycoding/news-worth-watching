@@ -215,7 +215,7 @@ function getNewsSources(): SourceCategory[] {
     {
       name: "Azores · Policy & Regional",
       sources: [
-        { label: "Governo dos Açores", url: "https://www.azores.gov.pt/pt", type: 'scrape' },
+        { label: "Governo dos Açores", url: "https://portal.azores.gov.pt", type: 'scrape' },
         { label: "Diário da República", url: "https://dre.pt/web/guest/home", type: 'scrape' },
         { label: "INOVA (Inovação Açores)", url: "https://inova.azores.gov.pt", type: 'scrape' }
       ]
@@ -223,8 +223,8 @@ function getNewsSources(): SourceCategory[] {
     {
       name: "São Miguel · Environment & Research",
       sources: [
-        { label: "Azores Geopark", url: "https://azoresgeopark.com", type: 'scrape' },
-        { label: "Universidade dos Açores", url: "https://www.uac.pt", type: 'scrape' }
+        { label: "Azores Geopark", url: "https://www.azoresgeopark.com/", type: 'scrape' },
+        { label: "Universidade dos Açores", url: "https://noticias.uac.pt/feed/", type: 'rss' }
       ]
     },
     {

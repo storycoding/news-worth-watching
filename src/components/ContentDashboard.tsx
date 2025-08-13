@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { calculateRelevanceScore, getScoreboard } from '../utils/scoring';
 import { loadStoredNews, scrapeLatestNews, type Item } from '../utils/newsFetcher';
 import { loadFixtureData, getNewsFromFixture, getVideosFromFixture } from '../utils/fixtureLoader';
+import { cleanNewsItems, type CleanedNewsItem } from '../utils/dataCleaner';
 import { WORKER_TIMEOUT, WORKER_TIMEOUT_SECONDS, TIMEOUT_COUNTER_INTERVAL } from '../utils/constants';
 import TextCard from './TextCard';
 import VideoCard from './VideoCard';
@@ -21,9 +22,7 @@ type VideoItem = {
   type: 'video';
 };
 
-type NewsItem = Item & {
-  type: 'news';
-};
+type NewsItem = CleanedNewsItem;
 
 type ContentItem = NewsItem | VideoItem;
 
@@ -40,7 +39,7 @@ export default function ContentDashboard({
   globalSort = "recent",
   onTagsAndSourcesUpdate
 }: ContentDashboardProps) {
-  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+  const [newsItems, setNewsItems] = useState<CleanedNewsItem[]>([]);
   const [videoItems, setVideoItems] = useState<VideoItem[]>([]);
   const [scoreboard, setScoreboard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -126,9 +125,11 @@ export default function ContentDashboard({
           videoData = [];
         }
 
-        // Add type identifiers
+        // Clean and add type identifiers
+        console.log('🧹 Cleaning news data...');
+        const cleanedNews = cleanNewsItems(newsData);
         console.log('🏷️ Adding type identifiers...');
-        const typedNews = newsData.map((item: Item): NewsItem => ({ ...item, type: 'news' }));
+        const typedNews = cleanedNews.map((item: CleanedNewsItem): NewsItem => ({ ...item, type: 'news' }));
         const typedVideos = videoData.map((item: any): VideoItem => ({ ...item, type: 'video' }));
 
         console.log(`📰 Setting ${typedNews.length} news items`);
@@ -220,9 +221,12 @@ export default function ContentDashboard({
       } else {
         // Relevance sorting - normalize scores across content types
         const getRelevanceScore = (item: ContentItem): number => {
-          if (item.type === 'news' && scoreboard) {
+          // Infer type if not present
+          const itemType = item.type || (item.hasOwnProperty('thumbnail') ? 'video' : 'news');
+          
+          if (itemType === 'news' && scoreboard) {
             return calculateRelevanceScore(item, scoreboard);
-          } else if (item.type === 'video') {
+          } else if (itemType === 'video') {
             // Normalize video scoring to be comparable with news scores
             let score = 0;
             if (item.tags?.includes("agroforestry")) score += 4;
@@ -283,7 +287,8 @@ export default function ContentDashboard({
         
         // Update news items if we got fresh data
         if (scrapeResult.news) {
-          const typedNews = scrapeResult.news.map((item: Item): NewsItem => ({ ...item, type: 'news' }));
+          const cleanedNews = cleanNewsItems(scrapeResult.news);
+          const typedNews = cleanedNews.map((item: CleanedNewsItem): NewsItem => ({ ...item, type: 'news' }));
           setNewsItems(typedNews);
           console.log(`✅ Refreshed ${typedNews.length} news items`);
         }
@@ -350,22 +355,25 @@ export default function ContentDashboard({
           </div>
         </div>
 
-        {filtered.map((item) => (
-          item.type === 'news' ? (
-                      <TextCard
-            key={`news-${item.id}`}
-            item={item}
-            scoreboard={scoreboard}
-            onTagClick={(tag) => setTags([...tags, tag])}
-          />
+        {filtered.map((item) => {
+          // Check if item has type field, otherwise infer from structure
+          const itemType = item.type || (item.hasOwnProperty('thumbnail') ? 'video' : 'news');
+          
+          return itemType === 'news' ? (
+            <TextCard
+              key={`news-${item.id}`}
+              item={item as NewsItem}
+              scoreboard={scoreboard}
+              onTagClick={(tag) => setTags([...tags, tag])}
+            />
           ) : (
             <VideoCard
               key={`video-${item.id}`}
-              item={item}
+              item={item as VideoItem}
               onTagClick={(tag) => setTags([...tags, tag])}
             />
-          )
-        ))}
+          );
+        })}
       </main>
     </div>
   );
